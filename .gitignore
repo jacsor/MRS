@@ -1,0 +1,17 @@
+# Linux temp files
+*~
+
+# C/C++ compiled object files
+*.o
+
+# C/C++ compiled dynamic libraries
+*.so
+
+# Jetbrains project directory
+.idea
+
+# Rstudio project files
+*.Rproj
+.Rproj.user
+.Rhistory
+.Ruildignore
