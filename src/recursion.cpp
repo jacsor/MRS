@@ -8,9 +8,12 @@ using namespace std;
 
 class_tree::class_tree( Mat<uint> X,
                         Col<uint> G,
+                        Col<uint> H,
                         vec init_state,
                         int n_groups,
+                        Col<uint> n_subgroups,
                         int K,
+                        vec nu_vec,
                         double alpha,
                         double beta,
                         double gamma,
@@ -19,9 +22,12 @@ class_tree::class_tree( Mat<uint> X,
                         bool return_tree ):
                         X(X),
                         G(G),
+                        H(H),
                         init_state(init_state),
                         n_groups(n_groups),
+                        n_subgroups(n_subgroups),
                         K(K),
+                        nu_vec(nu_vec),
                         alpha(alpha),
                         beta(beta),
                         gamma(gamma),
@@ -32,6 +38,9 @@ class_tree::class_tree( Mat<uint> X,
   n_tot = X.n_rows;
   p = X.n_cols;
   n_states = init_state.n_elem;
+  cum_subgroups.set_size(n_subgroups.n_elem + 1);
+  cum_subgroups(0) = 0;
+  cum_subgroups.subvec(1, n_subgroups.n_elem) = cumsum(n_subgroups);
   init();
 }
 
@@ -62,8 +71,7 @@ void class_tree::update()
       if( (level < K + 1) && (return_tree == true) )
       {
         XI_CURR = get_node_xi_post(I, level);
-        LAMBDA_CURR = get_node_lambda_post(I, level);        
-        
+        LAMBDA_CURR = get_node_lambda_post(I, level);  
       }
       if(return_global_null == true)
         PSI_CURR = get_node_psi_post(I, level);  
@@ -74,7 +82,7 @@ void class_tree::update()
       for(int j=0; j<(int)pow2(level); j++)
       {
         I.var[MAXVAR] = j;
-        num_data_points_node = sum_elem(DATA_CURR, n_groups);
+        num_data_points_node = sum_elem(DATA_CURR, sum(n_subgroups));
         
         // XI_CURR[0] : log P(null -> null | data )
         // XI_CURR[1] : log P(null -> alternative | data )
@@ -503,8 +511,10 @@ arma::mat class_tree::compute_kappa(INDEX_TYPE& I, int level)
     it = 0;
     CHI_CHILD_0 = get_child_chi(I,d,level,0);
     CHI_CHILD_1 = get_child_chi(I,d,level,1);
-    m = compute_m(I, level, d);
-    
+    if( sum(n_subgroups) == n_groups)
+      m = compute_m(I, level, d);
+    else
+      m = compute_m_anova(I, level, d);
     for(int s = 0; s < n_states; s++)
     {
       chi_vec_child_0(s) = CHI_CHILD_0[it];
@@ -553,6 +563,104 @@ arma::vec class_tree::compute_m(INDEX_TYPE& I, int level, int d)
   return output;
 
 }
+
+
+arma::vec class_tree::compute_m_anova(INDEX_TYPE& I, int level, int d)
+{
+  vec output(n_states); output.fill(log(0.0));
+  int *DATA_CHILD_0, *DATA_CHILD_1;
+  DATA_CHILD_0 = get_child_data(I,d,level,0);
+  DATA_CHILD_1 = get_child_data(I,d,level,1);
+    
+  int n_grid = nu_vec.n_elem;
+  int n_grid_theta = 4;
+  vec theta0(n_grid_theta);
+  theta0 << 0.125 << 0.375 << 0.625 << 0.875 ;
+
+  vec data_0( sum(n_subgroups) ); 
+  vec data_1( sum(n_subgroups) );
+  for(int i = 0; i < sum(n_subgroups); i++)
+  {
+    data_0(i) = DATA_CHILD_0[i]; 
+    data_1(i) = DATA_CHILD_1[i];
+  }  
+  
+  //under the null
+  if(sum(data_0) == 0 || sum(data_1) == 0)
+  {
+    for(int g = 0; g < n_grid; g++)
+    {
+      for(int h = 0; h < n_grid_theta; h++)
+        output(0) = log_exp_x_plus_exp_y( output(0), 
+          eval_h(theta0(h), data_0, data_1, nu_vec(g), alpha ) - log(n_grid) - log(n_grid_theta) ); 
+    }
+  }
+  else
+  {
+    for(int g = 0; g < n_grid; g++)
+    {
+      double tt = newtonMethod(data_0, data_1, nu_vec(g), alpha);
+      if(isnan(tt))
+      {
+        for(int h = 0; h < n_grid_theta; h++)
+          output(0) = log_exp_x_plus_exp_y( output(0), 
+            eval_h(theta0(h), data_0, data_1, nu_vec(g), alpha ) - log(n_grid) - log(n_grid_theta) ); 
+      }
+      else
+        output(0) = log_exp_x_plus_exp_y( output(0),tt  - log(n_grid) );    
+    }
+      
+    
+  }
+  //under the alternative
+  mat temp_mat(n_groups, n_grid); temp_mat.fill(log(0.0));
+  for(int j = 0; j < n_groups; j++)
+  {
+    vec temp_data_0 = data_0.subvec( cum_subgroups(j), cum_subgroups(j+1) - 1  );
+    vec temp_data_1 = data_1.subvec( cum_subgroups(j), cum_subgroups(j+1) - 1  );
+    if(sum(temp_data_0) == 0 &&  sum(temp_data_1) == 0)
+    {
+      for(int g = 0; g < n_grid; g++)
+        temp_mat(j,g) = 0;
+    }      
+    else if(sum(temp_data_0) == 0 || sum(temp_data_1) == 0)
+    {
+      for(int g = 0; g < n_grid; g++)
+      {
+        for(int h = 0; h < n_grid_theta; h++)
+          temp_mat(j,g) = log_exp_x_plus_exp_y( temp_mat(j,g), 
+            eval_h(theta0(h), temp_data_0, temp_data_1, nu_vec(g), alpha ) - log(n_grid_theta) ); 
+      }
+    }
+    else
+    {
+      for(int g = 0; g < n_grid; g++)
+      {
+        double tt = newtonMethod(temp_data_0, temp_data_1, nu_vec(g), alpha);        
+        if(isnan(tt))
+        {
+          for(int h = 0; h < n_grid_theta; h++)
+            temp_mat(j,g) = log_exp_x_plus_exp_y( temp_mat(j,g), 
+              eval_h(theta0(h), temp_data_0, temp_data_1, nu_vec(g), alpha ) - log(n_grid_theta) );                    
+        }
+        else
+          temp_mat(j,g) = tt;
+      }
+         
+      
+    }
+  }
+  for(int g = 0; g < n_grid; g++)
+    output(1) = log_exp_x_plus_exp_y(output(1), sum(temp_mat.col(g)));
+  output(1) -= log(n_grid);  
+  
+  output(2) = output(0);    
+  return output;
+
+}
+
+
+
 
 arma::mat class_tree::prior_transition_matrix(int level)
 {
@@ -653,15 +761,22 @@ void class_tree::representative_subtree(  INDEX_TYPE& I,
         DATA_CHILD_1 = get_child_data(I,top_direction,level,1);
         
         int *DATA_CURR = get_node_data(I, level);
-        int num_data_points_node = sum_elem(DATA_CURR, n_groups);
-        
+        int num_data_points_node = num_data_points_node = sum_elem(DATA_CURR, sum(n_subgroups));
+        int n_0, n_1;
         int n_sample = 1000;
         mat theta(n_sample, n_groups);
-        
+
         for(int j = 0; j < n_groups; j++)
         {
-          vec temp = rbeta(n_sample, (double)DATA_CHILD_0[j] + alpha, 
-            (double)DATA_CHILD_1[j] + alpha );
+          n_0 = 0;
+          n_1 = 1;
+          for(int i = 0; i < n_subgroups(j); i++)
+          {
+            n_0 += DATA_CHILD_0[i];
+            n_1 += DATA_CHILD_1[i];
+          }
+          vec temp = rbeta(n_sample, (double)n_0 + alpha, 
+            (double)n_1 + alpha );
           theta.col(j) = temp;
         }
               
@@ -927,7 +1042,7 @@ void class_tree::init()
   for(int i = 0; i <= K + 1; i++ )
   {
     modelscount[i] = Choose(p + i - 1, i);    
-    data[i] = new int[(unsigned long long)(modelscount[i]*n_groups) << i ];
+    data[i] = new int[(unsigned long long)(modelscount[i]*sum(n_subgroups)) << i ];
     if( (i <= K) && (return_tree == true) )
     {
       xi_post[i] = new double[(unsigned long long)(modelscount[i]*n_states*n_states) << i ];
@@ -947,10 +1062,10 @@ void class_tree::init()
     {
       for(l = 0; l < pow2(i); l++)
       {
-        for(int km = 0; km < n_groups; km++ )
+        for(int km = 0; km < sum(n_subgroups); km++ )
         {
-          // counts of data-points in node for each group
-          data[i][(j*pow2(i)+l)*n_groups+km] = 0;
+          // counts of data-points in node for each group and sub-group
+          data[i][(j*pow2(i)+l)*sum(n_subgroups)+km] = 0;
         }          
       }
     }
@@ -958,7 +1073,7 @@ void class_tree::init()
   
   INDEX_TYPE I_root = init_index(0);  
   for(int i=0; i < n_tot; i++)
-    add_data_to_subtree(I_root, 0, 1, 0, X.row(i).t(), G(i));
+    add_data_to_subtree(I_root, 0, 1, 0, X.row(i).t(), cum_subgroups(G(i)-1) + H(i) - 1 );
   
 }
 
@@ -972,7 +1087,7 @@ void class_tree::add_data_to_subtree( INDEX_TYPE I,
   int *NODE_CURR;
   INDEX_TYPE I_child;
   NODE_CURR = get_node_data(I, level);
-  NODE_CURR[group-1] += 1;  // add one observation to the node for that group 
+  NODE_CURR[group] += 1;  // add one observation to the node for that group 
   int i = 0;
   
   if(level < K + 1)
@@ -1024,7 +1139,7 @@ double * class_tree::get_node_upsilon(INDEX_TYPE& I, int level)
 
 int * class_tree::get_node_data(INDEX_TYPE& I, int level)
 {
-    return &data[level][(get_node_index(I, level, n_groups))];
+    return &data[level][(get_node_index(I, level, sum(n_subgroups) ))];
 }
 
 int * class_tree::get_node_map(INDEX_TYPE& I, int level)
@@ -1073,7 +1188,7 @@ double * class_tree::get_child_upsilon(INDEX_TYPE& I, int i, int level, ushort w
 int * class_tree::get_child_data(INDEX_TYPE& I, int i, int level, ushort which)
 {
     INDEX_TYPE child_index = make_child_index(I,i,level,which);
-    return &data[level+1][(get_node_index(child_index,level+1, n_groups))];
+    return &data[level+1][(get_node_index(child_index,level+1, sum(n_subgroups) ))];
 }
 
 int * class_tree::get_child_map(INDEX_TYPE& I, int i, int level, ushort which)
@@ -1126,6 +1241,9 @@ void class_tree::clear()
   xi_post = NULL;  
   upsilon = NULL;
   
+}
 
 
- }
+ 
+ 
+ 

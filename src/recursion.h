@@ -9,12 +9,16 @@ class class_tree
 {
   public:
   Mat<uint> X; // the data
-  Col<uint> G; // the labels of each observation
+  Col<uint> G; // the group labels of each observation
+  Col<uint> H; // the sub-group labels of each observation (used for dANOVA)
   int n_tot; // total number of observations
   int p;    // dimension of the sample space
   int n_states; // number of hidden states
   vec init_state; // initial state of the hidden process
   int n_groups;  // number of groups
+  Col<uint> n_subgroups; // number of subgrous within each group (used for dANOVA)
+  Col<uint> cum_subgroups; // cumulative sum of n_subgroups; (used for dANOVA)
+  arma::vec nu_vec;  // discrete prior on the parameter nu
   int K;    // maximum depth of the tree
   double alpha;   // pseudo-counts
   double beta, gamma, eta;  // parameters of the transition probability matrix
@@ -22,10 +26,13 @@ class class_tree
     
   //constructor
   class_tree( Mat<uint> X, 
-              Col<uint> G, 
+              Col<uint> G,
+              Col<uint> H,
               vec init_state, 
               int n_groups, 
+              Col<uint> n_subgroups,
               int K, 
+              arma::vec nu_vec,
               double alpha = 0.5,
               double beta = 1.0,
               double gamma = 0.1,
@@ -103,6 +110,9 @@ class class_tree
 
   // compute marginal likelihood at individual node for each state
   arma::vec compute_m(INDEX_TYPE& I, int level, int d);
+  
+  arma::vec compute_m_anova(INDEX_TYPE& I, int level, int d);
+
 
   // return prior transition probability matrix
   arma::mat prior_transition_matrix(int level);
@@ -158,7 +168,6 @@ class class_tree
   int * get_child_map(INDEX_TYPE& I, int i, int level, ushort which);               
   
 
-  
   
 };
 

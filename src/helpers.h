@@ -69,5 +69,18 @@ int sum_elem(int * my_array , int num_elem);
 INDEX_TYPE get_next_node( INDEX_TYPE& I, 
                           int p, 
                           int level); 
+                          
+double newtonMethod( arma::vec data_0, 
+                     arma::vec data_1, 
+                     double nu, 
+                     double alpha );
+                     
+double eval_h( double theta0, 
+                arma::vec data_0, 
+                arma::vec data_1, 
+                double nu, 
+                double alpha );
+
+
 
 #endif

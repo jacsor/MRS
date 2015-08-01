@@ -5,3 +5,7 @@ fitMRScpp <- function(X, G, n_groups, init_state, Omega, K = 5L, alpha = 0.5, be
     .Call('MRS_fitMRScpp', PACKAGE = 'MRS', X, G, n_groups, init_state, Omega, K, alpha, beta, gamma, eta, return_global_null, return_tree)
 }
 
+fitMRSNESTEDcpp <- function(X, G, H, n_groups, n_subgroups, init_state, Omega, nu_vec, K = 5L, alpha = 0.5, beta = 1.0, gamma = 0.1, eta = 0.33, return_global_null = TRUE, return_tree = TRUE) {
+    .Call('MRS_fitMRSNESTEDcpp', PACKAGE = 'MRS', X, G, H, n_groups, n_subgroups, init_state, Omega, nu_vec, K, alpha, beta, gamma, eta, return_global_null, return_tree)
+}
+

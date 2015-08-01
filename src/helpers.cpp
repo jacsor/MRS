@@ -14,7 +14,11 @@ const double log2pi = std::log(2.0 * M_PI);
 double log_exp_x_plus_exp_y(double x, double y) 
 {
   double result;
-  if( ( exp(x) == 0 ) && ( exp(y) == 0 ) )
+  if( ( isinf( fabs(x) ) == true ) && ( isinf( fabs(y) ) == false )  )
+    result = y;
+  else if ( ( isinf( fabs(x) ) == false ) && ( isinf( fabs(y) ) == true )  )
+    result = x;
+  else if ( ( isinf( fabs(x) ) == true ) && ( isinf( fabs(y) ) == true )  )
     result = x;
   else if ( x - y >= 100 ) result = x;
   else if ( x - y <= -100 ) result = y;
@@ -248,6 +252,76 @@ INDEX_TYPE get_next_node(INDEX_TYPE& I, int p, int level)
     node.var[MAXVAR] = 0;
 
     return node;
+}
+
+
+
+
+double newtonMethod(arma::vec data_0, arma::vec data_1, double nu, double alpha)
+{
+  int N = data_0.n_elem;
+  double theta0 = exp( log(sum(data_0) + alpha) - log( sum(data_0) + sum(data_1) + 2*alpha ) );
+  double theta1;
+  double tolerance = 10E-7;
+  double epsilon = 10E-14;
+  int maxIter = 20;
+  bool foundSol = false;
+  double yprime, ysecond;
+  double y;
+  
+  for(int i = 0; i < maxIter; i++ )
+  {
+    // evaluate first and second derivative at theta0
+    yprime = (alpha - 1.0) / theta0  - (alpha - 1.0) / ( 1.0 - theta0);    
+    ysecond = -(alpha - 1.0) / pow(theta0, 2.0)  - (alpha - 1.0) / pow( 1.0 - theta0, 2.0);
+    y = (alpha - 1.0) * log(theta0) + (alpha - 1.0) * log(1.0 - theta0);
+    for(int j = 0; j < N; j++)
+    {
+      yprime += (nu * ( R::digamma( nu*theta0 + data_0(j) ) -  R::digamma( nu*(1.0 - theta0) + data_1(j) ) ) );
+      ysecond += ( pow(nu,2.0) * ( R::trigamma( nu*theta0 + data_0(j) ) +  R::trigamma( nu*(1.0 - theta0) + data_1(j) ) ) );
+      y += R::lbeta(nu*theta0 + data_0(j), nu*(1.0 - theta0) + data_1(j) );
+    }
+    yprime -= ( N * nu * ( R::digamma( nu*theta0 ) -  R::digamma( nu*(1.0 - theta0) ) ) );
+    ysecond -= ( N * pow(nu,2.0) * ( R::trigamma( nu*theta0 ) +  R::trigamma( nu*(1.0 - theta0) ) ) );
+    y -= N * R::lbeta( nu*theta0, nu*(1.0 - theta0) );
+    y -= R::lbeta(alpha, alpha);
+    // cout << "theta = " << theta0 << ", h(theta) = " << y << ", h'(theta) = " << yprime << ", h''(theta) = " << ysecond; 
+    // cout << ", m = " << y + 0.5 * log( 2.0 * M_PI ) - 0.5*log( fabs(ysecond) ) << endl;
+    if( fabs(ysecond) < epsilon )
+      i = maxIter;
+    else
+    {
+      theta1 = theta0 - yprime / ysecond;
+      if( log( fabs(theta1 - theta0) ) - log( fabs(theta1)  ) < log(tolerance)  )
+      {
+        foundSol = true;
+        i = maxIter;
+        theta0 = theta1;
+      }
+      else
+        theta0 = theta1;
+    }
+  }
+  /*
+  if(!foundSol)
+     cout << "convergence issue with Newton's method" << endl;
+  */
+  return  y + 0.5 * log( 2.0 * M_PI ) - 0.5*log( fabs(ysecond) );
+}
+ 
+
+
+
+
+double eval_h(double theta0, arma::vec data_0, arma::vec data_1, double nu, double alpha)
+{
+  int N = data_0.n_elem;
+  double y = (alpha - 1.0) * log(theta0) + (alpha - 1.0) * log(1.0 - theta0);
+  y -= R::lbeta(alpha, alpha);  
+  for(int j = 0; j < N; j++)
+    y += R::lbeta(nu*theta0 + data_0(j), nu*(1.0 - theta0) + data_1(j) );
+  y -= N * R::lbeta( nu*theta0, nu*(1.0 - theta0) );  
+  return y;
 }
 
 
