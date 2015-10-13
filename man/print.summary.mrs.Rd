@@ -22,7 +22,7 @@ p = 2
 X = matrix(c(runif(p*n/2),rbeta(p*n/2, 1, 4)), nrow=n, byrow=TRUE)
 G = c(rep(1,n/2), rep(2,n/2))
 x = mrs(X=X, G=G)
-fit = summary(x, rho = 0.95, abs_eff = 1)
+fit = summary(x, rho = 0.8, abs_eff = 0.5)
 print(fit)
 }
 \references{
