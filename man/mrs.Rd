@@ -29,6 +29,8 @@ The three states are \emph{null}, \emph{altenrative} and \emph{prune}, respectiv
 
 \item{gamma}{Parameter of the transition probability matrix. Default is \code{gamma = 0.3}.}
 
+\item{eta}{Parameter of the transition probability matrix. Default is \code{eta = 0.3}.}
+
 \item{alpha}{Pseudo-counts of the Beta random probability assignments. Default is \code{alpha = 0.5}.}
 
 \item{return_global_null}{Boolean indicating whether to return the posterior probability of the global null hypothesis.}

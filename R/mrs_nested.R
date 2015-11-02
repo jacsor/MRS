@@ -16,6 +16,7 @@
 #' The three states are \emph{null}, \emph{altenrative} and \emph{prune}, respectively.
 #' @param beta Spatial clustering parameter of the transition probability matrix.
 #' @param gamma Parameter of the transition probability matrix.
+#' @param eta Parameter of the transition probability matrix. Default is \code{eta = 0.3}.
 #' @param alpha Pseudo-counts of the Beta random probability assignments.
 #' @param nu_vec The support of the discrete uniform prior on nu.
 #' @param return_global_null Boolean indicating whether to return the marginal posterior probability of the global null.

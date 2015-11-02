@@ -33,6 +33,8 @@ The three states are \emph{null}, \emph{altenrative} and \emph{prune}, respectiv
 
 \item{gamma}{Parameter of the transition probability matrix.}
 
+\item{eta}{Parameter of the transition probability matrix. Default is \code{eta = 0.3}.}
+
 \item{alpha}{Pseudo-counts of the Beta random probability assignments.}
 
 \item{nu_vec}{The support of the discrete uniform prior on nu.}
