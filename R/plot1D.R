@@ -2,12 +2,12 @@
 #'
 #' This function visualizes the regions of the representative tree 
 #' of the output of the \code{\link{mrs}} function.
-#' For each region the alternative probability or the effect size is plotted.
+#' For each region the posterior probability of difference (PMAP)  or the effect size is plotted.
 #' 
 #' @param ans An \code{mrs} object.
 #' @param type What is represented at each node. 
-#' The options are \code{type = c("eff", "alt")}. 
-#' Default is \code{type = "alt"}.
+#' The options are \code{type = c("eff", "prob")}. 
+#' Default is \code{type = "prob"}.
 #' @param group If \code{type = "eff"}, which group effect size is used. 
 #' Default is \code{group = 1}.
 #' @param dim If the data are multivariate, \code{dim} is the dimension plotted. 
@@ -37,10 +37,10 @@
 #' G = c(rep(1, n1), rep(2,n2))
 #' 
 #' ans = mrs(X, G, K=10)    
-#' plot1D(ans, type = "alt")    
+#' plot1D(ans, type = "prob")    
 #' plot1D(ans, type = "eff")
 plot1D <- function( ans,
-                    type = "alt",
+                    type = "prob",
                     group = 1,
                     dim = 1,
                     regions = rep(1,length(ans$RepresentativeTree$Levels)),
@@ -63,7 +63,7 @@ plot1D <- function( ans,
     layout(1)    
   }
   
-  if(type == "alt")
+  if(type == "prob")
   {
     names = round(ans$RepresentativeTree$AltProbs[regions==1], digits=2)    
     col_range <- colorRampPalette(c("white","darkblue"))(100)
@@ -115,7 +115,7 @@ plot1D <- function( ans,
          ytop = tail(seq(1,2,1/100),-1), 
          col=col_range, border = col_range )
     rect(1.25, 1, 1.75, 2.0)
-    if(type == "alt")
+    if(type == "prob")
       mtext(formatC(seq(0,1,.1), format = "f", digits = 1),side=2,at=seq(1,2.,by=.1),las=2,cex=1, line=0)
     if(type == "eff")
       mtext(round(seq( 0, max(names) , length=11), digits=1),

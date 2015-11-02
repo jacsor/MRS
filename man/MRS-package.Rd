@@ -20,7 +20,7 @@ License: \tab GPL (>= 3) \cr
 \author{
 \tabular{ll}{
 Authors: \tab Jacopo Soriano and Li Ma \cr
-Maintainer: \tab Jacopo Soriano <jacopo.soriano@duke.edu> \cr
+Maintainer: \tab Jacopo Soriano <jacopo.soriano@gmail.com> \cr
 }
 }
 \references{
@@ -48,7 +48,7 @@ G = c(rep(1, n1), rep(2,n2))
 
 ans = mrs(X, G, K=10)
 out = summary(ans)
-plot1D(ans, type = "alt")
+plot1D(ans, type = "prob")
 
 ## EXAMPLE 2D ##
 
@@ -68,7 +68,7 @@ colnames(X) = c(1,2)
 G = c(rep(1, n1), rep(2,n2))
 
 ans = mrs(X, G, K=10)
-plot2D(ans, type = "alt", legend = TRUE)
+plot2D(ans, type = "prob", legend = TRUE)
 
 
 }

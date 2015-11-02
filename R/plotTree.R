@@ -1,14 +1,14 @@
 #' Plot nodes of the representative tree 
 #'
 #' This function visualizes the representative tree of the output of the \code{\link{mrs}} function.
-#' For each node of the representative tree, the PMAPs or the effect size is plotted.
+#' For each node of the representative tree, the posterior probability of difference (PMAP) or the effect size is plotted.
 #' Each node in the tree is associated to a region of the sample space. 
 #' All non-terminal nodes have two children nodes obtained by partitiing the parent region with a dyadic cut along a given direction.
 #' The numbers under the vertices represent the cutting direction. 
 #' 
 #' @param ans A \code{mrs} object.
 #' @param type What is represented at each node. 
-#' The options are \code{type = c("eff", "alt")}.
+#' The options are \code{type = c("eff", "prob")}.
 #' @param group If \code{type = "eff"}, which group effect size is used. 
 #' @param legend Color legend for type. Default is \code{legend = FALSE}.
 #' @param main Main title. Default is \code{main = ""}.
@@ -35,8 +35,8 @@
 #' G = c(rep(1, n1), rep(2,n2))
 #'   
 #' ans = mrs(X, G, K=8) 
-#' plotTree(ans, type = "alt", legend = TRUE)
-plotTree <- function(ans, type="alt", group = 1, legend = FALSE, main = "", node.size=5)
+#' plotTree(ans, type = "prob", legend = TRUE)
+plotTree <- function(ans, type="prob", group = 1, legend = FALSE, main = "", node.size=5)
 {
   if(class(ans)!="mrs")
   {
@@ -53,7 +53,7 @@ plotTree <- function(ans, type="alt", group = 1, legend = FALSE, main = "", node
   {
     layout(1)    
   }
-  if(type == "alt")
+  if(type == "prob")
   {
     box.size = (ans$RepresentativeTree$AltProbs)*node.size + .2*node.size
     name = round(ans$RepresentativeTree$AltProbs, digits=2)    
@@ -111,7 +111,7 @@ plotTree <- function(ans, type="alt", group = 1, legend = FALSE, main = "", node
          ytop = tail(seq(1,2,1/100),-1), 
          col=col_range, border = col_range )
     rect(1.25, 1, 1.75, 2.0)
-    if(type == "alt")
+    if(type == "prob")
       mtext(formatC(seq(0,1,.1), format = "f", digits = 1),side=2,at=seq(1,2.,by=.1),las=2,cex=1, line=0)
     if(type == "eff")
       mtext(round(seq( 0, max(name) , length=11), digits=1),

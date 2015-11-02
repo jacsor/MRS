@@ -19,7 +19,7 @@ effect size larger than \code{abs_eff} in absolute value are reported.
 Default is \code{abs_eff = 0}.}
 
 \item{sort_by}{Define in which order the regions are reported.
-The options are \code{sort_by = c("eff", "alt")} and
+The options are \code{sort_by = c("eff", "prob")} and
 the default is \code{sort_by = "eff"}.}
 
 \item{...}{Additional summary parameters.}
@@ -38,8 +38,8 @@ n = 100
 p = 2
 X = matrix(c(runif(p*n/2),rbeta(p*n/2, 1, 4)), nrow=n, byrow=TRUE)
 G = c(rep(1,n/2), rep(2,n/2))
-object = mra(X=X, G=G)
-fit = summary(object, rho = 0.8, abs_eff = 1)
+object = mrs(X=X, G=G)
+fit = summary(object, rho = 0.5, abs_eff = 0.1)
 }
 \references{
 Soriano J. and Ma L. (2014). Multi-resolution two-sample comparison

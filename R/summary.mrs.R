@@ -12,7 +12,7 @@
 #'  effect size larger than \code{abs_eff} in absolute value are reported. 
 #'  Default is \code{abs_eff = 0}.
 #' @param sort_by Define in which order the regions are reported. 
-#'  The options are \code{sort_by = c("eff", "alt")} and 
+#'  The options are \code{sort_by = c("eff", "prob")} and 
 #'  the default is \code{sort_by = "eff"}. 
 #' @param ... Additional summary parameters. 
 #' @return A \code{list} with information about the top regions.
@@ -27,8 +27,8 @@
 #' p = 2
 #' X = matrix(c(runif(p*n/2),rbeta(p*n/2, 1, 4)), nrow=n, byrow=TRUE)
 #' G = c(rep(1,n/2), rep(2,n/2))
-#' object = mra(X=X, G=G)
-#' fit = summary(object, rho = 0.8, abs_eff = 1)
+#' object = mrs(X=X, G=G)
+#' fit = summary(object, rho = 0.5, abs_eff = 0.1)
 summary.mrs <- function(object, rho = 0.5, abs_eff = 0, sort_by = "eff", ...)
 {
   if(class(object)!="mrs")
@@ -40,38 +40,51 @@ summary.mrs <- function(object, rho = 0.5, abs_eff = 0, sort_by = "eff", ...)
   abs_max = apply( abs(object$RepresentativeTree$EffectSizes),1,max)
   top_regions = which( (object$RepresentativeTree$AltProbs > rho) & ( abs_max > abs_eff ) )
   
-  
-  if(sort_by == "eff" )
-    plot_order = rev(top_regions[sort.int(abs_max[top_regions], index.return=TRUE)$ix])
-  else if(sort_by == "rej")
-    plot_order = rev(top_regions[sort.int(object$RepresentativeTree$AltProbs[top_regions], index.return=TRUE)$ix])
-  
-  
-  effect_size = matrix(object$RepresentativeTree$EffectSizes[plot_order,], nrow = length(plot_order))
-  effect_size.names = rep(NA,object$Data$Groups)
-  for( i in 1:object$Data$Groups )
-    effect_size.names[i] = paste("Eff_Size",i, sep="_")
-  colnames(effect_size) = effect_size.names  
-  
-  
-  regions = matrix(object$RepresentativeTree$Regions[plot_order,], nrow = length(plot_order))
-  regions.names = rep(NA,2*ncol(object$Data$X))
-  for( i in 1:ncol(object$Data$X) )
-    regions.names[c(2*i-1,2*i)] = c( paste("Min",i, sep="_"), paste("Max",i, sep="_"))    
-  colnames(regions) = regions.names
-  
-  
-  output = list(  Prior_Null = object$PriorGlobNull,
-                  Posterior_Null = object$PostGlobNull,
-                  Alt_Prob = object$RepresentativeTree$AltProbs[plot_order],
-                  Effect_Size = effect_size,
-                  Regions = regions,
-                  Directions = object$RepresentativeTree$Directions[plot_order],
-                  groups = object$Data$Groups,
-                  p = ncol(object$Data$X),
-                  Num_Regions = length(top_regions)
-                  
-  )
+  if(length(top_regions)>0)
+  {
+    
+    if(sort_by == "eff" ){
+      plot_order = rev(top_regions[sort.int(abs_max[top_regions], index.return=TRUE)$ix])
+    }else if(sort_by == "prob"){
+      plot_order = rev(top_regions[sort.int(object$RepresentativeTree$AltProbs[top_regions], index.return=TRUE)$ix])
+    }
+    
+    
+    effect_size = matrix(object$RepresentativeTree$EffectSizes[plot_order,], nrow = length(plot_order))
+    effect_size.names = rep(NA,object$Data$Groups)
+    for( i in 1:object$Data$Groups )
+      effect_size.names[i] = paste("Eff_Size",i, sep="_")
+    colnames(effect_size) = effect_size.names  
+    
+    
+    regions = matrix(object$RepresentativeTree$Regions[plot_order,], nrow = length(plot_order))
+    regions.names = rep(NA,2*ncol(object$Data$X))
+    for( i in 1:ncol(object$Data$X) )
+      regions.names[c(2*i-1,2*i)] = c( paste("Min",i, sep="_"), paste("Max",i, sep="_"))    
+    colnames(regions) = regions.names
+    
+    output = list(  Prior_Null = object$PriorGlobNull,
+                    Posterior_Null = object$PostGlobNull,
+                    Alt_Prob = object$RepresentativeTree$AltProbs[plot_order],
+                    Effect_Size = effect_size,
+                    Regions = regions,
+                    Directions = object$RepresentativeTree$Directions[plot_order],
+                    groups = object$Data$Groups,
+                    p = ncol(object$Data$X),
+                    Num_Regions = length(top_regions)                  
+                  )
+  }else{
+    output = list(  Prior_Null = object$PriorGlobNull,
+                    Posterior_Null = object$PostGlobNull,
+                    Alt_Prob = NULL,
+                    Effect_Size = NULL,
+                    Regions = NULL,
+                    Directions = NULL,
+                    groups = object$Data$Groups,
+                    p = ncol(object$Data$X),
+                    Num_Regions = 0                  
+    )
+  }
   
   class(output) <- "summary.mrs"
   output

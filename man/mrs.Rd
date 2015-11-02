@@ -17,20 +17,21 @@ mrs(X, G, n_groups = length(unique(G)), Omega = "default", K = 6,
 
 \item{Omega}{Matrix defining the vertices of the sample space.
 The \code{"default"} option defines a hyperrectangle containing all the data points.
-Otherwise the user can define a matrix  where each row represents a dimension,  and the two columns contain the associated lower and upper limit.}
+Otherwise the user can define a matrix  where each row represents a dimension,
+and the two columns contain the associated lower and upper limits for each dimension.}
 
 \item{K}{Depth of the tree. Default is \code{K = 5}, while the maximum is \code{K = 14}.}
 
 \item{init_state}{Initial state of the hidden Markov process.
 The three states are \emph{null}, \emph{altenrative} and \emph{prune}, respectively.}
 
-\item{beta}{Spatial clustering parameter of the transition probability matrix.}
+\item{beta}{Spatial clustering parameter of the transition probability matrix. Default is \code{beta = 1}.}
 
-\item{gamma}{Parameter of the transition probability matrix.}
+\item{gamma}{Parameter of the transition probability matrix. Default is \code{gamma = 0.3}.}
 
-\item{alpha}{Pseudo-counts of the Beta random probability assignments.}
+\item{alpha}{Pseudo-counts of the Beta random probability assignments. Default is \code{alpha = 0.5}.}
 
-\item{return_global_null}{Boolean indicating whether to return the marginal posterior probability of the global null.}
+\item{return_global_null}{Boolean indicating whether to return the posterior probability of the global null hypothesis.}
 
 \item{return_tree}{Boolean indicating whether to return the posterior representative tree.}
 }
@@ -39,7 +40,7 @@ An \code{mrs} object.
 }
 \description{
 This function executes the Multi Resolution Scanning algorithm to detect differences
-across the distributions of multiple samples.
+across multiple distributions.
 }
 \examples{
 set.seed(1)

@@ -1,4 +1,3 @@
 useDynLib(MRS)
 importFrom(Rcpp, evalCpp)
-# exportPattern("^[[:alpha:]]+")
 export(mrs, mrs_nested, plotTree, plot1D, plot2D, summary.mrs, print.summary.mrs)

@@ -5,8 +5,8 @@
 #' 
 #' @param ans An \code{mrs} object.
 #' @param type Different options on how to visualize the rectangular regions. 
-#' The options are \code{type = c("eff", "alt", "empty", "none")}. 
-#' Default is \code{type = "alt"}.
+#' The options are \code{type = c("eff", "prob", "empty", "none")}. 
+#' Default is \code{type = "prob"}.
 #' @param data.points Different options on how to plot the data points. 
 #'  The options are \code{data.points = c("all", "differential", "none")}. 
 #'  Default is \code{data.points = "all"}. 
@@ -43,7 +43,7 @@
 #' G = c(rep(1, n1), rep(2,n2))
 #'   
 #' ans = mrs(X, G, K=8)
-#' plot2D(ans, type = "alt", legend = TRUE)
+#' plot2D(ans, type = "prob", legend = TRUE)
 #'   
 #' plot2D(ans, type="empty", data.points = "differential", 
 #'  background = "none") 
@@ -51,7 +51,7 @@
 #' plot2D(ans, type="none", data.points = "differential", 
 #'  background = "smeared", levels = 4)       
 plot2D = function(  ans, 
-                    type = "alt", 
+                    type = "prob", 
                     data.points = "all", 
                     background = "none", 
                     group = 1, 
@@ -120,7 +120,7 @@ plot2D = function(  ans,
   par(mar = c(3.1, 3.1, 3.1, 1.1))
   
   
-  if(type == "alt")
+  if(type == "prob")
   {
     names = round(ans$RepresentativeTree$AltProbs, digits=2)    
     col_range <- colorRampPalette(c("white","darkblue"))(100)
@@ -169,7 +169,7 @@ plot2D = function(  ans,
     if( type =="eff")
       nodes = nodes[sort.int( abs(ans$RepresentativeTree$EffectSizes[nodes,group]), 
                               index.return= TRUE )$ix] 
-    else if(type=="alt")
+    else if(type=="prob")
       nodes = nodes[sort.int( ans$RepresentativeTree$AltProbs[nodes], index.return= TRUE )$ix]
     
     for( j in nodes )
@@ -209,7 +209,7 @@ plot2D = function(  ans,
   {
     plot(NA,type="n",ann=FALSE,xlim=c(1,2),ylim=c(1,2),xaxt="n",yaxt="n",bty="n")
     title(main, adj = 0)
-    if( (type == "alt") || (type == "eff") )
+    if( (type == "prob") || (type == "eff") )
     {
       # mtext(main, side = 3, at = 1, cex = 1)
       rect(xleft = 1, 
@@ -220,7 +220,7 @@ plot2D = function(  ans,
       rect(1, 1, 1.2, 2.0)
     }
     
-    if(type == "alt")
+    if(type == "prob")
       mtext( format( round(seq(0,1,by=0.2), digits=1), nsmall=1) ,side=2,at=seq(1,2,by=.2),las=2,cex=1, line=0)
     if(type == "eff")
       mtext( format(round(seq( 0, max(names) , length=5), digits=1), nsmall=1),

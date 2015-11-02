@@ -4,14 +4,14 @@
 \alias{plotTree}
 \title{Plot nodes of the representative tree}
 \usage{
-plotTree(ans, type = "alt", group = 1, legend = FALSE, main = "",
+plotTree(ans, type = "prob", group = 1, legend = FALSE, main = "",
   node.size = 5)
 }
 \arguments{
 \item{ans}{A \code{mrs} object.}
 
 \item{type}{What is represented at each node.
-The options are \code{type = c("eff", "alt")}.}
+The options are \code{type = c("eff", "prob")}.}
 
 \item{group}{If \code{type = "eff"}, which group effect size is used.}
 
@@ -23,7 +23,7 @@ The options are \code{type = c("eff", "alt")}.}
 }
 \description{
 This function visualizes the representative tree of the output of the \code{\link{mrs}} function.
-For each node of the representative tree, the PMAPs or the effect size is plotted.
+For each node of the representative tree, the posterior probability of difference (PMAP) or the effect size is plotted.
 Each node in the tree is associated to a region of the sample space.
 All non-terminal nodes have two children nodes obtained by partitiing the parent region with a dyadic cut along a given direction.
 The numbers under the vertices represent the cutting direction.
@@ -48,7 +48,7 @@ colnames(X) = c(1,2)
 G = c(rep(1, n1), rep(2,n2))
 
 ans = mrs(X, G, K=8)
-plotTree(ans, type = "alt", legend = TRUE)
+plotTree(ans, type = "prob", legend = TRUE)
 }
 \references{
 Soriano J. and Ma L. (2014). Multi-resolution two-sample comparison
