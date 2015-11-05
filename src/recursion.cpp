@@ -229,7 +229,7 @@ void class_tree::update()
         }
         
         CHI_CURR += n_states;
-        DATA_CURR += n_groups;
+        DATA_CURR += sum(n_subgroups);
         if( return_global_null == true)
           PSI_CURR++;
         if( return_tree == true)
