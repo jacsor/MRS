@@ -761,7 +761,7 @@ void class_tree::representative_subtree(  INDEX_TYPE& I,
         DATA_CHILD_1 = get_child_data(I,top_direction,level,1);
         
         int *DATA_CURR = get_node_data(I, level);
-        int num_data_points_node = num_data_points_node = sum_elem(DATA_CURR, sum(n_subgroups));
+        int  num_data_points_node = sum_elem(DATA_CURR, sum(n_subgroups));
         int n_0, n_1;
         int n_sample = 1000;
         mat theta(n_sample, n_groups);
