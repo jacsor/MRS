@@ -1,3 +1,6 @@
 useDynLib(MRS)
 importFrom(Rcpp, evalCpp)
-export(mrs, mrs_nested, plotTree, plot1D, plot2D, summary.mrs, print.summary.mrs)
+import(optimx)
+export(mrs, mrs_nested, plotTree, plot1D, plot2D)
+S3method(summary, mrs)
+S3method(print, summary.mrs)

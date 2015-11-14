@@ -1022,9 +1022,9 @@ double class_tree::get_marginal_loglikelihood()
 
 void class_tree::init()
 {
-  unsigned long long j, l;
+  unsigned long  j, l;
   data = new int*[K+2];
-  modelscount = new unsigned long long int[K+2];
+  modelscount = new unsigned long  int[K+2];
   chi = new double*[K+2];
   
   if(return_global_null == true)
@@ -1042,21 +1042,21 @@ void class_tree::init()
   for(int i = 0; i <= K + 1; i++ )
   {
     modelscount[i] = Choose(p + i - 1, i);    
-    data[i] = new int[(unsigned long long)(modelscount[i]*sum(n_subgroups)) << i ];
+    data[i] = new int[(unsigned long )(modelscount[i]*sum(n_subgroups)) << i ];
     if( (i <= K) && (return_tree == true) )
     {
-      xi_post[i] = new double[(unsigned long long)(modelscount[i]*n_states*n_states) << i ];
-      varphi_post[i] = new double[(unsigned long long)(modelscount[i]*n_states) << i ];
-      lambda_post[i] = new double[(unsigned long long)(modelscount[i]*n_states*p) << i ];
-      map[i] = new int[(unsigned long long)(modelscount[i]*n_states*3) << i ];
+      xi_post[i] = new double[(unsigned long )(modelscount[i]*n_states*n_states) << i ];
+      varphi_post[i] = new double[(unsigned long )(modelscount[i]*n_states) << i ];
+      lambda_post[i] = new double[(unsigned long )(modelscount[i]*n_states*p) << i ];
+      map[i] = new int[(unsigned long )(modelscount[i]*n_states*3) << i ];
       
     } 
     
-    chi[i] = new double[(unsigned long long)(modelscount[i]*n_states) << i ];
+    chi[i] = new double[(unsigned long )(modelscount[i]*n_states) << i ];
     if(return_global_null == true)
-      psi_post[i] = new double[(unsigned long long)(modelscount[i]) << i ];
+      psi_post[i] = new double[(unsigned long )(modelscount[i]) << i ];
     if(return_tree == true)
-      upsilon[i] = new double[(unsigned long long)(modelscount[i]*n_states) << i ];
+      upsilon[i] = new double[(unsigned long )(modelscount[i]*n_states) << i ];
     
     for(j = 0; j < modelscount[i]; j++)
     {

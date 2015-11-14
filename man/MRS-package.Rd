@@ -3,7 +3,7 @@
 \alias{MRS}
 \docType{package}
 \title{
-Multi-resolution multi-sample comparison using MRS}
+Multi-Resolution Scanning for Cross-Sample Differences}
 \description{
 This package fits the Multi Resolution Scanning algorithm (MRS) for comparison across distributions.
 The model is based on a nonparametric process taking the form of a Markov model that transitions between a "null" and an "alternative" state on a multi-resolution partition tree of the sample space. The MRS effectively detects and characterizes a variety of underlying differences. These differences can be visualized using several plotting functions. }
@@ -12,7 +12,7 @@ The model is based on a nonparametric process taking the form of a Markov model 
 Package: \tab MRS \cr
 Type: \tab Package\cr
 Version: \tab 1.0\cr
-Date: \tab 2015-07-23\cr
+Date: \tab 2015-11-14\cr
 License: \tab GPL (>= 3) \cr
 }
 
@@ -20,9 +20,11 @@ License: \tab GPL (>= 3) \cr
 \author{
 \tabular{ll}{
 Authors: \tab Jacopo Soriano and Li Ma \cr
-Maintainer: \tab Jacopo Soriano <jacopo.soriano@gmail.com> \cr
+Maintainer: \tab Jacopo Soriano <jsoriano.stat@gmail.com> \cr
 }
+
 }
+
 \references{
 Soriano J. and Ma L. (2014). Multi-resolution two-sample comparison 
  through acceptance-rejection Markov trees. \emph{Preprint}. \url{http://arxiv.org/abs/1404.3753}

@@ -77,7 +77,7 @@ class class_tree
   double **lambda_post;
   double **varphi_post;
   int **map;
-  unsigned long long int *modelscount;
+  unsigned long  *modelscount;
   
   // save the representative tree and nodes information
   result_cubes_type result_cubes;
