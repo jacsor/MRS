@@ -1,18 +1,18 @@
 Package: MRS
 Type: Package
-Title: Multi-resolution scanning for cross-sample differences
+Title: Multi-Resolution Scanning for Cross-Sample Differences
 Version: 1.0
-Date: 2015-07-23
+Date: 2015-11-14
 Author: Jacopo Soriano and Li Ma
-Maintainer: Jacopo Soriano <jacopo.soriano@gmail.com>
-Description: This package fits the MRS algorithm for comparison across distributions. 
+Maintainer: Jacopo Soriano <jsoriano.stat@gmail.com>
+Description: An implementation of the MRS algorithm for comparison across distributions. 
   The model is based on a nonparametric process taking the form of a Markov model 
   that transitions between a "null" and a "alternative" state 
   on a multi-resolution partition tree of the sample space. 
   MRS effectively detects and characterizes a variety of underlying differences. 
   These differences can be visualized using several plotting functions.
 License: GPL (>= 3)
-Imports: Rcpp (>= 0.11.0), RcppArmadillo (>= 0.4.000.4), igraph, optimx
+Imports: Rcpp (>= 0.11.0), igraph, optimx
 Suggests: KernSmooth
 LinkingTo: Rcpp, RcppArmadillo
 NeedsCompilation: yes
