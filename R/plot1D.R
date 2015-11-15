@@ -65,7 +65,7 @@ plot1D <- function( ans,
   
   if(type == "prob")
   {
-    names = round(ans$RepresentativeTree$AltProbs[regions==1], digits=2)    
+    names = round(ans$RepresentativeTree$AltProbs[which(regions==1)], digits=2)    
     col_range <- colorRampPalette(c("white","darkblue"))(100)
     col = col_range[ ceiling(names*99+ 1) ]
     if (main == "default")
@@ -73,7 +73,7 @@ plot1D <- function( ans,
   }
   else if(type == "eff")
   {
-    names = abs(ans$RepresentativeTree$EffectSizes[regions==1,group])    
+    names = abs(ans$RepresentativeTree$EffectSizes[which(regions==1),group])    
     #     col_range <- c(colorRampPalette(c("red","white"))(50), 
     #                    colorRampPalette(c("white","dodgerblue"))(50))
     #     col = col_range[ ceiling(names/max(abs(names)+0.01)*100/2+50) ]
@@ -84,26 +84,28 @@ plot1D <- function( ans,
   }
   else 
   {
-    names = rep(1, length(ans$RepresentativeTree$AltProbs[regions==1]))
-    col = rep(NA, length(ans$RepresentativeTree$altProbs[regions==1]))
+    names = rep(1, length(ans$RepresentativeTree$AltProbs[which(regions==1)]))
+    col = rep(NA, length(ans$RepresentativeTree$altProbs[which(regions==1)]))
     if (main == "default")
       main = ""
   }
   
-  max.level = max(ans$RepresentativeTree$Levels[regions==1]) 
+  max.level = max(ans$RepresentativeTree$Levels[which(regions==1)]) 
   plot(1, type="n", yaxt='n', xlab="", ylab="", 
        xlim = ans$Data$Omega[dim,], ylim=c(0,max.level+.75), main = main)
   mtext("level", side=2, line = 2, at= (max.level+.75)/2 )
   axis(2, at= seq(0.4, max.level+0.4),
        labels=seq(max.level, 0, by=-1) )
   
-  for(i in 1:length(ans$RepresentativeTree$Levels[regions==1]))
+  it = 1
+  for (i in which(regions == 1) )
   {
     region = ans$RepresentativeTree$Regions[i,]
     rect(xleft=(region[2*dim-1]) , 
          ybottom= (max.level - ans$RepresentativeTree$Levels[i]) , 
          xright=region[2*dim] , 
-         ytop=(max.level - ans$RepresentativeTree$Levels[i] + .75), col = col[i], border = col[i])
+         ytop=(max.level - ans$RepresentativeTree$Levels[i] + .75), col = col[it], border = col[it])
+    it = it + 1
   }
   
   if(legend)
