@@ -9,15 +9,15 @@ using namespace std;
 
 // [[Rcpp::export]]
 Rcpp::List fitMRScpp( arma::mat X, 
-                      arma::Col<uint> G, 
+                      arma::vec G, 
                       int n_groups, 
                       arma::vec init_state,
                       arma::mat Omega,  
                       int K = 5, 
                       double alpha = 0.5, 
                       double beta = 1.0, 
-                      double gamma = 0.1, 
-                      double eta = 0.33,
+                      double gamma = 0.3, 
+                      double eta = 0.3,
                       bool return_global_null = true,
                       bool return_tree = true
                   )
@@ -32,9 +32,9 @@ Rcpp::List fitMRScpp( arma::mat X,
   // total number of observations
   int n_tot = X.n_rows;
   // total number of observations in each subgroup (used in dANOVA)
-  Col<uint> n_subgroups(n_groups); n_subgroups.fill(1);     
+  Col<int> n_subgroups(n_groups); n_subgroups.fill(1);     
   // sub-gorups label for each observation (used in dANOVA)
-  Col<uint> H(n_tot); H.fill(1);
+  vec H(n_tot); H.fill(1);
   // prior on parameter nu (used in dANOVA)
   arma::vec nu_vec(1); nu_vec << 1 ;   
   vec a = 1.0 / (Omega.col(1) - Omega.col(0));
@@ -148,18 +148,18 @@ Rcpp::List fitMRScpp( arma::mat X,
 
 // [[Rcpp::export]]
 Rcpp::List fitMRSNESTEDcpp( arma::mat X, 
-                            arma::Col<uint> G, 
-                            arma::Col<uint> H, 
+                            arma::vec G, 
+                            arma::vec H, 
                             int n_groups, 
-                            arma::Col<uint> n_subgroups,
+                            arma::Col<int> n_subgroups,
                             arma::vec init_state,
                             arma::mat Omega, 
                             arma::vec nu_vec,
                             int K = 5,                             
                             double alpha = 0.5, 
                             double beta = 1.0, 
-                            double gamma = 0.1, 
-                            double eta = 0.33,
+                            double gamma = 0.3, 
+                            double eta = 0.3,
                             bool return_global_null = true,
                             bool return_tree = true
                           )

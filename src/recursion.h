@@ -9,15 +9,15 @@ class class_tree
 {
   public:
   Mat<uint> X; // the data
-  Col<uint> G; // the group labels of each observation
-  Col<uint> H; // the sub-group labels of each observation (used for dANOVA)
+  arma::vec G; // the group labels of each observation
+  arma::vec H; // the sub-group labels of each observation (used for dANOVA)
   int n_tot; // total number of observations
   int p;    // dimension of the sample space
   int n_states; // number of hidden states
   vec init_state; // initial state of the hidden process
   int n_groups;  // number of groups
-  Col<uint> n_subgroups; // number of subgrous within each group (used for dANOVA)
-  Col<uint> cum_subgroups; // cumulative sum of n_subgroups; (used for dANOVA)
+  Col<int> n_subgroups; // number of subgrous within each group (used for dANOVA)
+  Col<int> cum_subgroups; // cumulative sum of n_subgroups; (used for dANOVA)
   arma::vec nu_vec;  // discrete prior on the parameter nu
   int K;    // maximum depth of the tree
   double alpha;   // pseudo-counts
@@ -26,11 +26,11 @@ class class_tree
     
   //constructor
   class_tree( Mat<uint> X, 
-              Col<uint> G,
-              Col<uint> H,
+              arma::vec G,
+              arma::vec H,
               vec init_state, 
               int n_groups, 
-              Col<uint> n_subgroups,
+              Col<int> n_subgroups,
               int K, 
               arma::vec nu_vec,
               double alpha = 0.5,

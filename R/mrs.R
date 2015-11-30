@@ -58,7 +58,7 @@ mrs <- function( X,
     }
   }
   
-  if( (K > 14) || (K <= 1) )
+  if( (K > 14) || (K < 1) )
   {
     print("ERROR: 0 < K < 15")
     return(0);

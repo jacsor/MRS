@@ -7,11 +7,11 @@ using namespace arma;
 using namespace std;
 
 class_tree::class_tree( Mat<uint> X,
-                        Col<uint> G,
-                        Col<uint> H,
+                        vec G,
+                        vec H,
                         vec init_state,
                         int n_groups,
-                        Col<uint> n_subgroups,
+                        Col<int> n_subgroups,
                         int K,
                         vec nu_vec,
                         double alpha,
