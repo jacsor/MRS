@@ -31,16 +31,16 @@ double log_exp_x_plus_exp_y(double x, double y)
   return result;
 }
 
-unsigned long long pow2(int k) 
+unsigned long pow2(int k) 
 {
-  unsigned long long res = (unsigned long long) 1 << k;
+  unsigned long res = (unsigned long) 1 << k;
   return res;
 }
 
-uint convert_to_inverse_base_2(double x, int k)
+unsigned int convert_to_inverse_base_2(double x, int k)
 {
-  uint x_base_2 = (uint) floor (x * pow2(k) );
-  uint x_base_inverse_2 = 0;
+  unsigned int x_base_2 = (unsigned int) floor (x * pow2(k) );
+  unsigned int x_base_inverse_2 = 0;
 
   for (int i = 0; i < k; i++) 
   {
@@ -50,10 +50,10 @@ uint convert_to_inverse_base_2(double x, int k)
   return x_base_inverse_2;
 }
 
-unsigned long long int Choose(int n, int k) 
+unsigned long int Choose(int n, int k) 
 {
-    unsigned long long int c = 1;
-    unsigned long long int d = 1;
+    unsigned long int c = 1;
+    unsigned long int d = 1;
     for (int i = 0; i <k; i++) 
     {
         c *= (n-i); d *= (i+1);
@@ -69,11 +69,11 @@ INDEX_TYPE init_index(int level)
     return init;
 }
 
-unsigned long long int get_node_index(INDEX_TYPE& I, int level, int dim)
+unsigned long int get_node_index(INDEX_TYPE& I, int level, int dim)
 {
-  unsigned long long  r = 0;
-  unsigned long long numerator = 1;
-  unsigned long long denominator = 1;
+  unsigned long  r = 0;
+  unsigned long numerator = 1;
+  unsigned long denominator = 1;
   
   for (int i = 0; i < level; i++) 
   {
@@ -84,7 +84,7 @@ unsigned long long int get_node_index(INDEX_TYPE& I, int level, int dim)
     
     r += numerator / denominator;   
   }
-  return dim*(r*pow2(level) + (unsigned long long) I.var[MAXVAR]);
+  return dim*(r*pow2(level) + (unsigned long) I.var[MAXVAR]);
     
 }
 
@@ -92,7 +92,7 @@ unsigned long long int get_node_index(INDEX_TYPE& I, int level, int dim)
 std::pair<bool, INDEX_TYPE> make_parent_index( INDEX_TYPE& I, 
                                           unsigned short part_dim, 
                                           int level, 
-                                          ushort which )
+                                          unsigned short which )
 {
     INDEX_TYPE parent_index = I;
     INDEX_TYPE child_index = I;
@@ -146,11 +146,11 @@ std::pair<bool, INDEX_TYPE> make_parent_index( INDEX_TYPE& I,
       }
       
     
-      if( ( ( parent_index.var[MAXVAR] >> j) & (ushort)1 ) != (ushort)which )
+      if( ( ( parent_index.var[MAXVAR] >> j) & (unsigned short)1 ) != (unsigned short)which )
         parent_exists = false;
       else
         parent_index.var[MAXVAR] = 
-          ( I.var[MAXVAR] & ~((~((ushort)0)) << j ) ) | ((I.var[MAXVAR] >> 1) & ((~((ushort)0)) << j ));
+          ( I.var[MAXVAR] & ~((~((unsigned short)0)) << j ) ) | ((I.var[MAXVAR] >> 1) & ((~((unsigned short)0)) << j ));
           
     }
 
@@ -162,7 +162,7 @@ std::pair<bool, INDEX_TYPE> make_parent_index( INDEX_TYPE& I,
 INDEX_TYPE make_child_index(  INDEX_TYPE& I, 
                               unsigned short part_dim, 
                               int level, 
-                              ushort which) {
+                              unsigned short which) {
     INDEX_TYPE child_index = I;
     unsigned short data = part_dim+1; 
     int i;
@@ -212,7 +212,7 @@ INDEX_TYPE make_child_index(  INDEX_TYPE& I,
     }
     // update the bits of the child
     child_index.var[MAXVAR] = 
-        ((I.var[MAXVAR] << 1) & ((~((ushort)0)) << (j+1) )) | ((ushort) which << j) | ( I.var[MAXVAR] & ~((~((ushort)0)) << j) );
+        ((I.var[MAXVAR] << 1) & ((~((unsigned short)0)) << (j+1) )) | ((unsigned short) which << j) | ( I.var[MAXVAR] & ~((~((unsigned short)0)) << j) );
     return child_index;
 }
 

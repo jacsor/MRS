@@ -19,6 +19,7 @@
 #' @param alpha Pseudo-counts of the Beta random probability assignments. Default is \code{alpha = 0.5}.
 #' @param return_global_null Boolean indicating whether to return the posterior probability of the global null hypothesis.
 #' @param return_tree Boolean indicating whether to return the posterior representative tree. 
+#' @param min_n_node Node in the tree is returned if there are more than \code{min_n_node} data-points in it.  
 #' @return An \code{mrs} object. 
 #' @export
 #' @examples
@@ -33,13 +34,14 @@ mrs <- function( X,
                  n_groups = length(unique(G)), 
                  Omega = "default", 
                  K = 6, 
-                 init_state = c(0.8,0.2,0), 
+                 init_state = NULL, 
                  beta = 1.0, 
                  gamma = 0.3, 
                  eta = 0.3, 
                  alpha = 0.5,
                  return_global_null = TRUE,
-                 return_tree = TRUE
+                 return_tree = TRUE,
+                 min_n_node = 0
                 )
 {
   X = as.matrix(X)
@@ -58,9 +60,9 @@ mrs <- function( X,
     }
   }
   
-  if( (K > 14) || (K < 1) )
+  if( (K > 14) || (K < 0) )
   {
-    print("ERROR: 0 < K < 15")
+    print("ERROR: 0 <= K < 15")
     return(0);
   }
   
@@ -70,10 +72,14 @@ mrs <- function( X,
     return(0);
   }
   
-  if( sum( init_state < 0 ) > 0 | sum( init_state ) != 1 )
-  {
-    print("ERROR: init_state should be non-negative and sum to 1")
-    return(0);
+  if(is.null(init_state)) {
+    init_state = c((1-eta)*(1-gamma), (1-eta)*gamma, eta)
+  } else {
+    if( sum( init_state < 0 ) > 0 | sum( init_state ) != 1 )
+    {
+      print("ERROR: init_state should be non-negative and sum to 1")
+      return(0);
+    }
   }
   
   if( alpha<=0 )
@@ -94,7 +100,7 @@ mrs <- function( X,
     return(0);
   }
   
-  ans = fitMRScpp(X, G, n_groups, init_state, Omega, K, alpha, beta, gamma, eta, return_global_null, return_tree)
+  ans = fitMRScpp(X, G, n_groups, init_state, Omega, K, alpha, beta, gamma, eta, return_global_null, return_tree, min_n_node)
 
   ans$RepresentativeTree$EffectSizes = matrix( unlist(ans$RepresentativeTree$EffectSizes), 
                                                nrow = length(ans$RepresentativeTree$Levels), byrow = TRUE)

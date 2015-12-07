@@ -6,7 +6,7 @@ using namespace Rcpp;
 using namespace arma;
 using namespace std;
 
-class_tree::class_tree( Mat<uint> X,
+class_tree::class_tree( Mat<unsigned int> X,
                         vec G,
                         vec H,
                         vec init_state,
@@ -19,7 +19,8 @@ class_tree::class_tree( Mat<uint> X,
                         double gamma,
                         double eta,
                         bool return_global_null,
-                        bool return_tree ):
+                        bool return_tree,
+                        int min_n_node):
                         X(X),
                         G(G),
                         H(H),
@@ -33,7 +34,8 @@ class_tree::class_tree( Mat<uint> X,
                         gamma(gamma),
                         eta(eta),
                         return_global_null(return_global_null),
-                        return_tree(return_tree)
+                        return_tree(return_tree),
+                        min_n_node(min_n_node)
 {
   n_tot = X.n_rows;
   p = X.n_cols;
@@ -89,7 +91,7 @@ void class_tree::update()
         // XI_CURR[2] : log P(null -> prune | data )
         // XI_CURR[3] : log P(alternative -> null | data )
         // XI_CURR[4] : log P(alternative -> alternative | data )
-        // XI_CURR[5] : log P(null -> prune | data )
+        // XI_CURR[5] : log P(alternative -> prune | data )
         // XI_CURR[6] : log P(prune -> null | data )
         // XI_CURR[7] : log P(prune -> alternative | data )
         // XI_CURR[8] : log P(prune -> prune | data )
@@ -99,7 +101,7 @@ void class_tree::update()
         // CHI_CURR[2] : log marginal likelihood when state is prune
         
         // s = hidden state, d = cutting direction
-        // LAMBDA_CURR[s=0 d=0], LAMBDA_CURR[s=1 d=0], ..., LAMBDA_CURR[s=1 d=0], ... 
+        // LAMBDA_CURR[s=0 d=0], LAMBDA_CURR[s=1 d=0], ..., LAMBDA_CURR[s=1 d=1], ... 
         
         // PSI_CURR[0] : global null probability when the parent's state is null
         
@@ -125,8 +127,7 @@ void class_tree::update()
           
           if(return_global_null == true)
             PSI_CURR[0] = 0;  
-        }
-        else if( (num_data_points_node == 0) || (num_data_points_node == 1) )
+        } else if( (num_data_points_node == 0) || (num_data_points_node == 1) )
         {
           for(int s = 0; s < n_states; s++)
             CHI_CURR[s] = num_data_points_node*level*log(2.0);  
@@ -169,8 +170,7 @@ void class_tree::update()
             compute_map(I, level, lambda_post);                
           }
                             
-        }
-        else
+        } else
         {
           kappa = compute_kappa(I, level);
           chi = compute_chi(kappa, log_lambda);
@@ -267,27 +267,27 @@ void class_tree::compute_map(INDEX_TYPE& I, int level, arma::mat lambda_post)
       max_val = like_vec.max(slice);
       UPSILON_CURR[s] = max_val;
       MAP_CURR[it + 2] = slice;
-      it += 3;
+      it += 3;      
     }
   }
   else
   {
-    double *CHI_CHILD_0, *CHI_CHILD_1;
+    double *XI_CHILD_0, *XI_CHILD_1;
     double *UPSILON_CHILD_0, *UPSILON_CHILD_1;
     // organize chi (the transition probability matrices) of the children in a cube  
-    cube cube_chi_child_0(n_states, n_states, p);
-    cube cube_chi_child_1(n_states, n_states, p);
-    it = 0;
+    cube cube_xi_child_0(n_states, n_states, p);
+    cube cube_xi_child_1(n_states, n_states, p);    
     for(int d = 0; d < p; d++)
     {
-      CHI_CHILD_0 = get_child_chi(I,d,level,0);
-      CHI_CHILD_1 = get_child_chi(I,d,level,1);     
+      it = 0;
+      XI_CHILD_0 = get_child_xi_post(I,d,level,0);
+      XI_CHILD_1 = get_child_xi_post(I,d,level,1);     
       for(int s = 0; s < n_states; s++)
       {
         for(int t = 0; t < n_states; t++)
         {
-          cube_chi_child_0(s,t,d) = CHI_CHILD_0[it];
-          cube_chi_child_1(s,t,d) = CHI_CHILD_1[it];
+          cube_xi_child_0(s,t,d) = XI_CHILD_0[it];
+          cube_xi_child_1(s,t,d) = XI_CHILD_1[it];
           it++;
         }
       }
@@ -296,9 +296,10 @@ void class_tree::compute_map(INDEX_TYPE& I, int level, arma::mat lambda_post)
     // organize Upsilon ( the MAP likelihood vector) of the children in a matrix
     mat mat_upsilon_child_0(n_states, p);
     mat mat_upsilon_child_1(n_states, p);
-    it = 0;
+    
     for(int d = 0; d < p; d++)
     {
+      it = 0;
       UPSILON_CHILD_0 = get_child_upsilon(I,d,level,0);
       UPSILON_CHILD_1 = get_child_upsilon(I,d,level,1);     
       for(int s = 0; s < n_states; s++)
@@ -326,13 +327,12 @@ void class_tree::compute_map(INDEX_TYPE& I, int level, arma::mat lambda_post)
           for(int tt = 0; tt < n_states; tt++)
           {
             // ... compute the likelihood                  
-            like_cube(ss, tt, d) = lambda_post(s, d) + cube_chi_child_0(s,ss,d) + cube_chi_child_0(s,tt,d) 
+            like_cube(ss, tt, d) = lambda_post(s, d) + cube_xi_child_0(s,ss,d) + cube_xi_child_1(s,tt,d) 
               + mat_upsilon_child_0(ss,d) + mat_upsilon_child_1(tt,d);
           }
         } 
       }
-      // ... and pick the "best" (d, ss, tt) combination for fixed s 
-  
+      // ... and pick the "best" (d, ss, tt) combination for fixed s   
       max_val = like_cube.max(row, col, slice);
       UPSILON_CURR[s] = max_val;
       MAP_CURR[it] = row;
@@ -716,8 +716,8 @@ void class_tree::representative_tree()
   // function to find nested sequence of regions with probability 
 
   INDEX_TYPE I_root = init_index(0); 
-  Col< uint > data_indices(n_tot);
-  Col< uint > cut_counts(p); cut_counts.fill(0);
+  Col< unsigned int > data_indices(n_tot);
+  Col< unsigned int > cut_counts(p); cut_counts.fill(0);
   for(int i=0; i < n_tot; i++)  
     data_indices(i) = i+1;
   representative_subtree(I_root, 0, 0, X, data_indices, cut_counts, 0);
@@ -726,10 +726,10 @@ void class_tree::representative_tree()
 
 void class_tree::representative_subtree(  INDEX_TYPE& I, 
                                           int level, 
-                                          ushort node_index, 
-                                          Mat<uint> X_uint,
-                                          Col<uint> data_indices,
-                                          Col<uint> cut_counts,
+                                          unsigned short node_index, 
+                                          Mat<unsigned int> X_binary,
+                                          Col<unsigned int> data_indices,
+                                          Col<unsigned int> cut_counts,
                                           uword state_star
                                         ) 
 {
@@ -739,7 +739,7 @@ void class_tree::representative_subtree(  INDEX_TYPE& I,
         int *MAP_CURR = get_node_map(I, level);    
         double *VARPHI_CURR = get_node_varphi_post(I, level);
         INDEX_TYPE J_0, J_1;
-        ushort new_node_index_0, new_node_index_1;      
+        unsigned short new_node_index_0, new_node_index_1;      
     
         if(level == 0)
         {       
@@ -765,16 +765,18 @@ void class_tree::representative_subtree(  INDEX_TYPE& I,
         int n_0, n_1;
         int n_sample = 1000;
         mat theta(n_sample, n_groups);
-
+        int it = 0;
         for(int j = 0; j < n_groups; j++)
         {
           n_0 = 0;
-          n_1 = 1;
+          n_1 = 0;
           for(int i = 0; i < n_subgroups(j); i++)
           {
-            n_0 += DATA_CHILD_0[i];
-            n_1 += DATA_CHILD_1[i];
+            n_0 += DATA_CHILD_0[it];
+            n_1 += DATA_CHILD_1[it];
+            it++;
           }
+          
           vec temp = rbeta(n_sample, (double)n_0 + alpha, 
             (double)n_1 + alpha );
           theta.col(j) = temp;
@@ -788,37 +790,36 @@ void class_tree::representative_subtree(  INDEX_TYPE& I,
         double den = log(0.0);
         for(int s = 0; s < n_states; s++)
           den = log_exp_x_plus_exp_y(den, VARPHI_CURR[s]);
-        
         effect_size = effect_size * exp(VARPHI_CURR[1] - den);
           
         bool flag = false;
-        if( num_data_points_node > 0 )
+        if( num_data_points_node > min_n_node )
         {
           flag = true;
         
-          vector<uint> left_indices, right_indices;
-          for(int i=0; i<(int)X_uint.n_rows; i++)
+          vector<unsigned int> left_indices, right_indices;
+          for(int i=0; i<(int)X_binary.n_rows; i++)
           {
-            if( ( X_uint(i,top_direction) >> cut_counts(top_direction))  & 1 )
+            if( ( X_binary(i,top_direction) >> cut_counts(top_direction))  & 1 )
               right_indices.push_back(i);
             else
               left_indices.push_back(i);
           }
           cut_counts(top_direction)++;
           
-          Col<uint> l_indices = conv_to< Col<uint> >::from(left_indices);
-          Col<uint> r_indices = conv_to< Col<uint> >::from(right_indices);
+          Col<unsigned int> l_indices = conv_to< Col<unsigned int> >::from(left_indices);
+          Col<unsigned int> r_indices = conv_to< Col<unsigned int> >::from(right_indices);
                     
           // move to the 2 children of the set    
           J_0 = make_child_index(I, top_direction, level, 0 );
     	    new_node_index_0 =  node_index << 1 ;
     	    representative_subtree(J_0, level+1, new_node_index_0, 
-            X_uint.rows(l_indices), data_indices(l_indices), cut_counts, state_0); 
+            X_binary.rows(l_indices), data_indices(l_indices), cut_counts, state_0); 
 	
 	        J_1 = make_child_index(I, top_direction, level, 1 );
     	    new_node_index_1 =  ( node_index << 1 ) | 1 ;	
 		      representative_subtree(J_1, level+1, new_node_index_1, 
-            X_uint.rows(r_indices), data_indices(r_indices), cut_counts, state_1); 
+            X_binary.rows(r_indices), data_indices(r_indices), cut_counts, state_1); 
         }
         
         if(flag)
@@ -837,13 +838,13 @@ void class_tree::save_index(  INDEX_TYPE& I,
                               double alt_prob, 
                               vec effect_size, 
                               int direction,
-                              Col<uint> data_indices,
-                              ushort node_index) 
+                              Col<unsigned int> data_indices,
+                              unsigned short node_index) 
 {
-  ushort x_curr = 0;
-  ushort index_prev_var = 0;
-  ushort lower = 0;
-  ushort x_curr_count = -1;
+  unsigned short x_curr = 0;
+  unsigned short index_prev_var = 0;
+  unsigned short lower = 0;
+  unsigned short x_curr_count = -1;
   cube_type new_cube;
   vector<side_type> new_sides;
   int i;  
@@ -898,19 +899,19 @@ vector< Col< unsigned > > class_tree::get_data_points_nodes()
   return v;
 }
 
-vector<ushort> class_tree::get_level_nodes()
+vector<unsigned short> class_tree::get_level_nodes()
 {
   result_cubes_type::iterator it;
-  vector<ushort> v ;
+  vector<unsigned short> v ;
   for(it=result_cubes.begin(); it<result_cubes.end(); it++)
     v.push_back(it->level);
   return v;
 }
 
-vector<ushort> class_tree::get_idx_nodes()
+vector<unsigned short> class_tree::get_idx_nodes()
 {
   result_cubes_type::iterator it;
-  vector<ushort> v ;
+  vector<unsigned short> v ;
   for(it=result_cubes.begin(); it<result_cubes.end(); it++)
     v.push_back(it->node_idx);
   return v;
@@ -957,7 +958,7 @@ vector< vector<double> > class_tree::get_sides_nodes(vec a, vec b)
   result_cubes_type::iterator it;
   vector<side_type>::iterator km;
   vector<vector<double> > v;
-  ushort actual_var = 0;
+  unsigned short actual_var = 0;
   
   for(it=result_cubes.begin(); it < result_cubes.end(); it++)
   {
@@ -1081,8 +1082,8 @@ void class_tree::add_data_to_subtree( INDEX_TYPE I,
                                       int level, 
                                       int x_curr, 
                                       int part_count, 
-                                      Col<uint> obs,
-                                      uint group)
+                                      Col<unsigned int> obs,
+                                      unsigned int group)
 {
   int *NODE_CURR;
   INDEX_TYPE I_child;
@@ -1149,49 +1150,49 @@ int * class_tree::get_node_map(INDEX_TYPE& I, int level)
 
 
 
-double * class_tree::get_child_xi_post(INDEX_TYPE& I, int i, int level, ushort which)
+double * class_tree::get_child_xi_post(INDEX_TYPE& I, int i, int level, unsigned short which)
 {
     INDEX_TYPE child_index = make_child_index(I,i,level,which);
     return &xi_post[level+1][(get_node_index(child_index,level+1, n_states*n_states))];
 }
 
-double * class_tree::get_child_varphi_post(INDEX_TYPE& I, int i, int level, ushort which)
+double * class_tree::get_child_varphi_post(INDEX_TYPE& I, int i, int level, unsigned short which)
 {
     INDEX_TYPE child_index = make_child_index(I,i,level,which);
     return &varphi_post[level+1][(get_node_index(child_index,level+1, n_states))];
 }
 
-double * class_tree::get_child_lambda_post(INDEX_TYPE& I, int i, int level, ushort which)
+double * class_tree::get_child_lambda_post(INDEX_TYPE& I, int i, int level, unsigned short which)
 {
     INDEX_TYPE child_index = make_child_index(I,i,level,which);
     return &lambda_post[level+1][(get_node_index(child_index,level+1, n_states*p))];
 }
 
-double * class_tree::get_child_psi_post(INDEX_TYPE& I, int i, int level, ushort which)
+double * class_tree::get_child_psi_post(INDEX_TYPE& I, int i, int level, unsigned short which)
 {
     INDEX_TYPE child_index = make_child_index(I,i,level,which);
     return &psi_post[level+1][(get_node_index(child_index,level+1, 1))];
 }
 
-double * class_tree::get_child_chi(INDEX_TYPE& I, int i, int level, ushort which)
+double * class_tree::get_child_chi(INDEX_TYPE& I, int i, int level, unsigned short which)
 {
     INDEX_TYPE child_index = make_child_index(I,i,level,which);
     return &chi[level+1][(get_node_index(child_index,level+1, n_states))];
 }
 
-double * class_tree::get_child_upsilon(INDEX_TYPE& I, int i, int level, ushort which)
+double * class_tree::get_child_upsilon(INDEX_TYPE& I, int i, int level, unsigned short which)
 {
     INDEX_TYPE child_index = make_child_index(I,i,level,which);
     return &upsilon[level+1][(get_node_index(child_index,level+1, n_states))];
 }
 
-int * class_tree::get_child_data(INDEX_TYPE& I, int i, int level, ushort which)
+int * class_tree::get_child_data(INDEX_TYPE& I, int i, int level, unsigned short which)
 {
     INDEX_TYPE child_index = make_child_index(I,i,level,which);
     return &data[level+1][(get_node_index(child_index,level+1, sum(n_subgroups) ))];
 }
 
-int * class_tree::get_child_map(INDEX_TYPE& I, int i, int level, ushort which)
+int * class_tree::get_child_map(INDEX_TYPE& I, int i, int level, unsigned short which)
 {
     INDEX_TYPE child_index = make_child_index(I,i,level,which);
     return &map[level+1][(get_node_index(child_index,level+1, 3*n_states))];

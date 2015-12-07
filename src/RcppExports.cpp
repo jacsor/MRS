@@ -7,8 +7,8 @@
 using namespace Rcpp;
 
 // fitMRScpp
-Rcpp::List fitMRScpp(arma::mat X, arma::vec G, int n_groups, arma::vec init_state, arma::mat Omega, int K, double alpha, double beta, double gamma, double eta, bool return_global_null, bool return_tree);
-RcppExport SEXP MRS_fitMRScpp(SEXP XSEXP, SEXP GSEXP, SEXP n_groupsSEXP, SEXP init_stateSEXP, SEXP OmegaSEXP, SEXP KSEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP gammaSEXP, SEXP etaSEXP, SEXP return_global_nullSEXP, SEXP return_treeSEXP) {
+Rcpp::List fitMRScpp(arma::mat X, arma::vec G, int n_groups, arma::vec init_state, arma::mat Omega, int K, double alpha, double beta, double gamma, double eta, bool return_global_null, bool return_tree, int min_n_node);
+RcppExport SEXP MRS_fitMRScpp(SEXP XSEXP, SEXP GSEXP, SEXP n_groupsSEXP, SEXP init_stateSEXP, SEXP OmegaSEXP, SEXP KSEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP gammaSEXP, SEXP etaSEXP, SEXP return_global_nullSEXP, SEXP return_treeSEXP, SEXP min_n_nodeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
@@ -24,7 +24,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type eta(etaSEXP);
     Rcpp::traits::input_parameter< bool >::type return_global_null(return_global_nullSEXP);
     Rcpp::traits::input_parameter< bool >::type return_tree(return_treeSEXP);
-    __result = Rcpp::wrap(fitMRScpp(X, G, n_groups, init_state, Omega, K, alpha, beta, gamma, eta, return_global_null, return_tree));
+    Rcpp::traits::input_parameter< int >::type min_n_node(min_n_nodeSEXP);
+    __result = Rcpp::wrap(fitMRScpp(X, G, n_groups, init_state, Omega, K, alpha, beta, gamma, eta, return_global_null, return_tree, min_n_node));
     return __result;
 END_RCPP
 }

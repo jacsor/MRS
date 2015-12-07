@@ -19,7 +19,8 @@ Rcpp::List fitMRScpp( arma::mat X,
                       double gamma = 0.3, 
                       double eta = 0.3,
                       bool return_global_null = true,
-                      bool return_tree = true
+                      bool return_tree = true,
+                      int min_n_node = 0
                   )
 {
 
@@ -40,19 +41,19 @@ Rcpp::List fitMRScpp( arma::mat X,
   vec a = 1.0 / (Omega.col(1) - Omega.col(0));
   vec b = - Omega.col(0) % a;
   // Initialize matrix of observations normalized to the p-dimensional hypercube
-  Mat<uint> X_uint(n_tot,p);    
+  Mat<unsigned int> X_binary(n_tot,p);    
   // Map each observation to the p-dimensional hypercube
   // Transform each observation in p-dimensional binary vector (up to resolution K+1)
   for(int i = 0; i < n_tot; i++ )
   {
     for(int d = 0; d < p; d++ )
-      X_uint(i,d) = convert_to_inverse_base_2(a(d)*X(i,d)+b(d), K+1 );
+      X_binary(i,d) = convert_to_inverse_base_2(a(d)*X(i,d)+b(d), K+1 );
   }
     
   /* ***************** */
   /* Compute posterior */
   /* ***************** */
-  class_tree my_tree( X_uint, 
+  class_tree my_tree( X_binary, 
                       G, 
                       H,
                       init_state, 
@@ -65,7 +66,8 @@ Rcpp::List fitMRScpp( arma::mat X,
                       gamma, 
                       eta, 
                       return_global_null, 
-                      return_tree);
+                      return_tree,
+                      min_n_node);
   my_tree.update();
   
   double loglike = my_tree.get_marginal_loglikelihood();
@@ -94,13 +96,13 @@ Rcpp::List fitMRScpp( arma::mat X,
   {
     my_tree.compute_varphi_post();  
     my_tree.representative_tree();     
-    vector<ushort> levels = my_tree.get_level_nodes();
+    vector<unsigned short> levels = my_tree.get_level_nodes();
     vector<double> alt_probs = my_tree.get_alt_prob_nodes();
     vector<vec> effect_sizes = my_tree.get_effect_size_nodes(); 
     vector<int> directions = my_tree.get_direction_nodes();
     vector< vector<double> > sides = my_tree.get_sides_nodes(a, b);   
     vector< Col< unsigned > > data_points =  my_tree.get_data_points_nodes();
-    vector<ushort> node_idx = my_tree.get_idx_nodes();
+    vector<unsigned short> node_idx = my_tree.get_idx_nodes();
     
     my_tree.clear();
         
@@ -176,19 +178,19 @@ Rcpp::List fitMRSNESTEDcpp( arma::mat X,
   vec a = 1.0 / (Omega.col(1) - Omega.col(0));
   vec b = - Omega.col(0) % a;
   // Initialize matrix of observations normalized to the p-dimensional hypercube
-  Mat<uint> X_uint(n_tot,p);    
+  Mat<unsigned int> X_binary(n_tot,p);    
   // Map each observation to the p-dimensional hypercube
   // Transform each observation in p-dimensional binary vector (up to resolution K+1)
   for(int i = 0; i < n_tot; i++ )
   {
     for(int d = 0; d < p; d++ )
-      X_uint(i,d) = convert_to_inverse_base_2(a(d)*X(i,d)+b(d), K+1 );
+      X_binary(i,d) = convert_to_inverse_base_2(a(d)*X(i,d)+b(d), K+1 );
   }
     
   /* ***************** */
   /* Compute posterior */
   /* ***************** */
-  class_tree my_tree( X_uint, 
+  class_tree my_tree( X_binary, 
                       G, 
                       H,
                       init_state, 
@@ -233,13 +235,13 @@ Rcpp::List fitMRSNESTEDcpp( arma::mat X,
   {
     my_tree.compute_varphi_post();  
     my_tree.representative_tree();     
-    vector<ushort> levels = my_tree.get_level_nodes();
+    vector<unsigned short> levels = my_tree.get_level_nodes();
     vector<double> alt_probs = my_tree.get_alt_prob_nodes();
     vector<vec> effect_sizes = my_tree.get_effect_size_nodes(); 
     vector<int> directions = my_tree.get_direction_nodes();
     vector< vector<double> > sides = my_tree.get_sides_nodes(a, b);   
     vector< Col< unsigned > > data_points =  my_tree.get_data_points_nodes();
-    vector<ushort> node_idx = my_tree.get_idx_nodes();
+    vector<unsigned short> node_idx = my_tree.get_idx_nodes();
     
     my_tree.clear();
         
