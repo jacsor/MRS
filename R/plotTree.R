@@ -114,11 +114,10 @@ plotTree <- function(ans, type="prob", group = 1, legend = FALSE, main = "", nod
     if(type == "prob")
       mtext(formatC(seq(0,1,.1), format = "f", digits = 1),side=2,at=seq(1,2.,by=.1),las=2,cex=1, line=0)
     if(type == "eff")
-      mtext(round(seq( 0, max(name) , length=11), digits=1),
+      mtext(formatC(seq( 0, max(name) , length=11), format = "f", digits = 1),
             side=2,at=seq(1,2.,by=.1),las=2,cex=1, line=0)    
   }
   
   par(.pardefault)   
-  
   
 }
