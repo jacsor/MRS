@@ -1,6 +1,10 @@
 useDynLib(MRS)
 importFrom(Rcpp, evalCpp)
-import(optimx)
+importFrom(utils, head, tail)
+importFrom(grDevices, colorRampPalette)
+importFrom(graphics, axis, layout, mtext, par, plot,
+             points, rect, smoothScatter, title)
+import(optimx, igraph)
 export(mrs, mrs_nested, plotTree, plot1D, plot2D)
 S3method(summary, mrs)
 S3method(print, summary.mrs)
