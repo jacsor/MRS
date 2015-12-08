@@ -40,7 +40,7 @@ mrs <- function( X,
                  eta = 0.3, 
                  alpha = 0.5,
                  return_global_null = TRUE,
-                 return_tree = TRUE,
+                 return_tree = TRUE, ## Please check, when return_tree = FALSE, MRS doesn't fit. Gets error message about data matrix.
                  min_n_node = 0
                 )
 {
