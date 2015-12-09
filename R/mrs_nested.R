@@ -133,10 +133,13 @@ mrs_nested <- function(  X,
                          return_global_null, 
                          return_tree )
   
-  ans$RepresentativeTree$EffectSizes = matrix( unlist(ans$RepresentativeTree$EffectSizes), 
-                                               nrow = length(ans$RepresentativeTree$Levels), byrow = TRUE)
-  ans$RepresentativeTree$Regions = matrix( unlist(ans$RepresentativeTree$Regions), 
-                                           nrow = length(ans$RepresentativeTree$Levels), byrow = TRUE)
+  if (return_tree) {
+    ans$RepresentativeTree$EffectSizes = matrix( unlist(ans$RepresentativeTree$EffectSizes), 
+                                                 nrow = length(ans$RepresentativeTree$Levels), byrow = TRUE)
+    ans$RepresentativeTree$Regions = matrix( unlist(ans$RepresentativeTree$Regions), 
+                                             nrow = length(ans$RepresentativeTree$Levels), byrow = TRUE)
+  }
+
   
   colnames(ans$Data$X) = colnames(X)
   
