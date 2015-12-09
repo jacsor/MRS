@@ -52,7 +52,7 @@ mrs_nested <- function(  X,
                          gamma = 0.3, 
                          eta = 0.3, 
                          alpha = 0.5,
-                         nu_vec = exp(seq(-1,4)),
+                         nu_vec = 10^(seq(-1,4)),
                          return_global_null = TRUE,
                          return_tree = TRUE )
 {
