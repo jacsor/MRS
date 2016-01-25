@@ -5,8 +5,8 @@
 \title{Multi Resolution Scanning}
 \usage{
 mrs(X, G, n_groups = length(unique(G)), Omega = "default", K = 6,
-  init_state = c(0.8, 0.2, 0), beta = 1, gamma = 0.3, eta = 0.3,
-  alpha = 0.5, return_global_null = TRUE, return_tree = TRUE)
+  init_state = NULL, beta = 1, gamma = 0.3, eta = 0.3, alpha = 0.5,
+  return_global_null = TRUE, return_tree = TRUE, min_n_node = 0)
 }
 \arguments{
 \item{X}{Matrix of the data. Each row represents an observation.}
@@ -36,6 +36,8 @@ The three states are \emph{null}, \emph{altenrative} and \emph{prune}, respectiv
 \item{return_global_null}{Boolean indicating whether to return the posterior probability of the global null hypothesis.}
 
 \item{return_tree}{Boolean indicating whether to return the posterior representative tree.}
+
+\item{min_n_node}{Node in the tree is returned if there are more than \code{min_n_node} data-points in it.}
 }
 \value{
 An \code{mrs} object.

@@ -10,15 +10,16 @@ using namespace std;
 
 
 const double log2pi = std::log(2.0 * M_PI);
+const int one_seq_bin = 2047;   // 11111111111 in binary
 
 double log_exp_x_plus_exp_y(double x, double y) 
 {
   double result;
-  if( ( isinf( fabs(x) ) == true ) && ( isinf( fabs(y) ) == false )  )
+  if( ( isinf( fabs(x) ) == 1 ) && ( isinf( fabs(y) ) == 0 )  )
     result = y;
-  else if ( ( isinf( fabs(x) ) == false ) && ( isinf( fabs(y) ) == true )  )
+  else if ( ( isinf( fabs(x) ) == 0 ) && ( isinf( fabs(y) ) == 1 )  )
     result = x;
-  else if ( ( isinf( fabs(x) ) == true ) && ( isinf( fabs(y) ) == true )  )
+  else if ( ( isinf( fabs(x) ) == 1 ) && ( isinf( fabs(y) ) == 1 )  )
     result = x;
   else if ( x - y >= 100 ) result = x;
   else if ( x - y <= -100 ) result = y;
@@ -148,9 +149,11 @@ std::pair<bool, INDEX_TYPE> make_parent_index( INDEX_TYPE& I,
     
       if( ( ( parent_index.var[MAXVAR] >> j) & (unsigned short)1 ) != (unsigned short)which )
         parent_exists = false;
-      else
+      else {
         parent_index.var[MAXVAR] = 
-          ( I.var[MAXVAR] & ~((~((unsigned short)0)) << j ) ) | ((I.var[MAXVAR] >> 1) & ((~((unsigned short)0)) << j ));
+          ( I.var[MAXVAR] & ~(one_seq_bin << j ) ) | 
+          ((I.var[MAXVAR] >> 1) & (one_seq_bin << j ));            
+      }
           
     }
 
@@ -212,7 +215,10 @@ INDEX_TYPE make_child_index(  INDEX_TYPE& I,
     }
     // update the bits of the child
     child_index.var[MAXVAR] = 
-        ((I.var[MAXVAR] << 1) & ((~((unsigned short)0)) << (j+1) )) | ((unsigned short) which << j) | ( I.var[MAXVAR] & ~((~((unsigned short)0)) << j) );
+        ((I.var[MAXVAR] << 1) & (one_seq_bin << (j+1) )) | 
+        ((unsigned short) which << j) | 
+        ( I.var[MAXVAR] & ~(one_seq_bin << j) );
+
     return child_index;
 }
 

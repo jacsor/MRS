@@ -6,7 +6,7 @@
 \usage{
 mrs_nested(X, G, H, n_groups = length(unique(G)), n_subgroups = NULL,
   Omega = "default", K = 6, init_state = c(0.8, 0.2, 0), beta = 1,
-  gamma = 0.3, eta = 0.3, alpha = 0.5, nu_vec = exp(seq(-1, 4)),
+  gamma = 0.3, eta = 0.3, alpha = 0.5, nu_vec = 10^(seq(-1, 4)),
   return_global_null = TRUE, return_tree = TRUE)
 }
 \arguments{
