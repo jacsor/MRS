@@ -52,6 +52,7 @@ void class_tree::update()
 {
   double *CHI_CURR, *LAMBDA_CURR;
   double *XI_CURR, *PSI_CURR, *UPSILON_CURR;
+  double *NU_CURR, *THETA_CURR;
   int *DATA_CURR;
   int num_data_points_node;
   INDEX_TYPE I;
@@ -74,6 +75,11 @@ void class_tree::update()
       {
         XI_CURR = get_node_xi_post(I, level);
         LAMBDA_CURR = get_node_lambda_post(I, level);  
+        
+        if (sum(n_subgroups) != n_groups) {
+          NU_CURR = get_node_nu_post(I, level);
+          THETA_CURR = get_node_theta_post(I, level);
+        }
       }
       if(return_global_null == true)
         PSI_CURR = get_node_psi_post(I, level);  
@@ -115,6 +121,10 @@ void class_tree::update()
         // MAP_CURR[3] : most likely left-child's state if parent's state is alternative
         // ...
         // MAP_CURR[8] : most likely cutting direction if the state is prune
+        
+        // NU_CURR[0] : P( nu_1 | S = 1, d = 0 ), P( nu_2 | S = 1, d = 0 ), ... P( nu_1 | S = 1, d = 1 ), ...
+        
+        // THETA_CURR: \hat \theta for each group and for each nu.
         
         if( level == (K+1) )
         {
@@ -167,11 +177,34 @@ void class_tree::update()
             // NOTE: MAP_CURR and UPSILON_CURR are updated within the function          
             for(int s=0; s < n_states; s++)
               lambda_post.row(s) = log_lambda.t();  
-            compute_map(I, level, lambda_post);                
+            compute_map(I, level, lambda_post);   
+            
+            // save thetas and nus if anova model
+            if (sum(n_subgroups) != n_groups) {
+              int n_nu_grid = nu_vec.n_elem;
+              it = 0;
+              for (int d = 0; d < p; d++) {
+                for (int ii = 0; ii < n_nu_grid; ii++) {
+                  NU_CURR[it] = -log(n_nu_grid);
+                  it++;
+                }
+              }
+              
+              it = 0;
+              for (int d = 0; d < p; d++) {
+                for (int ii = 0; ii < n_nu_grid; ii++) {
+                  for (int jj = 0; jj < n_groups; jj++) {
+                    THETA_CURR[it] = 0.5;
+                    it++;
+                  }
+                }
+              }
+            }
           }
                             
         } else
         {
+          // NOTE: NU_CURR and THETA_CURR are update within the function (only for ANDOVA)
           kappa = compute_kappa(I, level);
           chi = compute_chi(kappa, log_lambda);
           for(int s = 0; s < n_states; s++)
@@ -238,7 +271,14 @@ void class_tree::update()
           if(level < K + 1)
           {
             XI_CURR += n_states*n_states;
-            LAMBDA_CURR += n_states*p;       
+            LAMBDA_CURR += n_states*p;    
+            
+            if (sum(n_subgroups) != n_groups) {
+              int n_nu_grid = nu_vec.n_elem;
+              NU_CURR += p * n_nu_grid;
+              THETA_CURR += p * n_nu_grid * n_groups;
+            }
+
           }
         }                  
       }      
@@ -503,6 +543,8 @@ arma::mat class_tree::compute_kappa(INDEX_TYPE& I, int level)
   double *CHI_CHILD_0, *CHI_CHILD_1;
   mat xi_prior = prior_transition_matrix(level+1);
   vec chi_vec_child_0(n_states), chi_vec_child_1(n_states), m(n_states); 
+  int n_nu_grid = nu_vec.n_elem;
+  vec temp_nu_vec(n_nu_grid + 1);
   int it;
   double temp_0, temp_1;
   
@@ -513,8 +555,29 @@ arma::mat class_tree::compute_kappa(INDEX_TYPE& I, int level)
     CHI_CHILD_1 = get_child_chi(I,d,level,1);
     if( sum(n_subgroups) == n_groups)
       m = compute_m(I, level, d);
-    else
-      m = compute_m_anova(I, level, d);
+    else {
+      List list_m_thetas = compute_m_anova(I, level, d);
+      temp_nu_vec = Rcpp::as<vec>(list_m_thetas["m_nus"]);
+      mat thetas = Rcpp::as<mat>(list_m_thetas["thetas"]);
+      m(0) = temp_nu_vec(0);
+      m(2) = temp_nu_vec(0);
+      m(1) = log(0.0);
+      for (int ii = 0; ii < n_nu_grid; ii++) {
+        m(1) = log_exp_x_plus_exp_y(m(1), temp_nu_vec(ii + 1));
+      }
+      
+      if (return_tree == true) {
+        double *NU_POST = get_node_nu_post(I, level);
+        double *THETA_POST = get_node_theta_post(I, level);
+        for (int ii = 0; ii < n_nu_grid; ii++) {
+          NU_POST[d * n_nu_grid + ii] = temp_nu_vec(ii + 1) - m(1);
+          for (int jj = 0; jj < n_groups; jj++) {
+            THETA_POST[d * n_nu_grid * n_groups + ii * n_groups + jj] = thetas(jj, ii);
+          }
+        }
+      }
+
+    }
     for(int s = 0; s < n_states; s++)
     {
       chi_vec_child_0(s) = CHI_CHILD_0[it];
@@ -565,14 +628,15 @@ arma::vec class_tree::compute_m(INDEX_TYPE& I, int level, int d)
 }
 
 
-arma::vec class_tree::compute_m_anova(INDEX_TYPE& I, int level, int d)
+Rcpp::List class_tree::compute_m_anova(INDEX_TYPE& I, int level, int d)
 {
-  vec output(n_states); output.fill(log(0.0));
   int *DATA_CHILD_0, *DATA_CHILD_1;
   DATA_CHILD_0 = get_child_data(I,d,level,0);
   DATA_CHILD_1 = get_child_data(I,d,level,1);
     
   int n_grid = nu_vec.n_elem;
+  vec m_nus(n_grid + 1); m_nus.fill(log(0.0));
+  mat thetas(n_groups, n_grid); thetas.fill(0.5);
   int n_grid_theta = 4;
   vec theta0(n_grid_theta);
   theta0 << 0.125 << 0.375 << 0.625 << 0.875 ;
@@ -591,7 +655,7 @@ arma::vec class_tree::compute_m_anova(INDEX_TYPE& I, int level, int d)
     for(int g = 0; g < n_grid; g++)
     {
       for(int h = 0; h < n_grid_theta; h++)
-        output(0) = log_exp_x_plus_exp_y( output(0), 
+        m_nus(0) = log_exp_x_plus_exp_y( m_nus(0), 
           eval_h(theta0(h), data_0, data_1, nu_vec(g), alpha ) - log(n_grid) - log(n_grid_theta) ); 
     }
   }
@@ -599,15 +663,15 @@ arma::vec class_tree::compute_m_anova(INDEX_TYPE& I, int level, int d)
   {
     for(int g = 0; g < n_grid; g++)
     {
-      double tt = newtonMethod(data_0, data_1, nu_vec(g), alpha);
-      if(isnan(tt))
+      vec tt = newtonMethod(data_0, data_1, nu_vec(g), alpha);
+      if(std::isnan(tt(1)))
       {
         for(int h = 0; h < n_grid_theta; h++)
-          output(0) = log_exp_x_plus_exp_y( output(0), 
+          m_nus(0) = log_exp_x_plus_exp_y( m_nus(0), 
             eval_h(theta0(h), data_0, data_1, nu_vec(g), alpha ) - log(n_grid) - log(n_grid_theta) ); 
       }
       else
-        output(0) = log_exp_x_plus_exp_y( output(0),tt  - log(n_grid) );    
+        m_nus(0) = log_exp_x_plus_exp_y( m_nus(0), tt(1)  - log(n_grid) );    
     }
       
     
@@ -636,27 +700,28 @@ arma::vec class_tree::compute_m_anova(INDEX_TYPE& I, int level, int d)
     {
       for(int g = 0; g < n_grid; g++)
       {
-        double tt = newtonMethod(temp_data_0, temp_data_1, nu_vec(g), alpha);        
-        if(isnan(tt))
+        vec tt = newtonMethod(temp_data_0, temp_data_1, nu_vec(g), alpha);       
+        if(std::isnan(tt(1)))
         {
           for(int h = 0; h < n_grid_theta; h++)
             temp_mat(j,g) = log_exp_x_plus_exp_y( temp_mat(j,g), 
-              eval_h(theta0(h), temp_data_0, temp_data_1, nu_vec(g), alpha ) - log(n_grid_theta) );                    
+              eval_h(theta0(h), temp_data_0, temp_data_1, nu_vec(g), alpha ) - log(n_grid_theta) );      
         }
-        else
-          temp_mat(j,g) = tt;
+        else {
+          temp_mat(j,g) = tt(1);
+          thetas(j,g) = tt(0);
+        }
       }
          
       
     }
   }
   for(int g = 0; g < n_grid; g++)
-    output(1) = log_exp_x_plus_exp_y(output(1), sum(temp_mat.col(g)));
-  output(1) -= log(n_grid);  
-  
-  output(2) = output(0);    
-  return output;
-
+    m_nus(g + 1) = sum(temp_mat.col(g)) - log(n_grid);
+    
+  return Rcpp::List::create(  
+  Rcpp::Named( "m_nus" ) = m_nus,
+  Rcpp::Named( "thetas" ) = thetas);  
 }
 
 
@@ -737,17 +802,20 @@ void class_tree::representative_subtree(  INDEX_TYPE& I,
     {        
         int state_0, state_1, top_direction;        
         int *MAP_CURR = get_node_map(I, level);    
-        double *VARPHI_CURR = get_node_varphi_post(I, level);
         INDEX_TYPE J_0, J_1;
         unsigned short new_node_index_0, new_node_index_1;      
     
         if(level == 0)
         {       
+          double *VARPHI_CURR = get_node_varphi_post(I, level);
           vec loglike(n_states);
           for(int s = 0; s < n_states; s++)
             loglike(s) = VARPHI_CURR[s];
           double max_val = loglike.max(state_star);          
         }
+        
+        int *DATA_CURR = get_node_data(I, level);
+        int  num_data_points_node = sum_elem(DATA_CURR, sum(n_subgroups));
         
         // find the most likely state for the children states
         state_0 = MAP_CURR[state_star*n_states];
@@ -755,43 +823,19 @@ void class_tree::representative_subtree(  INDEX_TYPE& I,
         // find most likely cutting direction
         top_direction = MAP_CURR[state_star*n_states+2];
         
-        vec effect_size(n_groups); 
-        int *DATA_CHILD_0, *DATA_CHILD_1;
-        DATA_CHILD_0 = get_child_data(I,top_direction,level,0);
-        DATA_CHILD_1 = get_child_data(I,top_direction,level,1);
+        vec effect_size(n_groups);
+        double alt_state_prob;
         
-        int *DATA_CURR = get_node_data(I, level);
-        int  num_data_points_node = sum_elem(DATA_CURR, sum(n_subgroups));
-        int n_0, n_1;
-        int n_sample = 1000;
-        mat theta(n_sample, n_groups);
-        int it = 0;
-        for(int j = 0; j < n_groups; j++)
-        {
-          n_0 = 0;
-          n_1 = 0;
-          for(int i = 0; i < n_subgroups(j); i++)
-          {
-            n_0 += DATA_CHILD_0[it];
-            n_1 += DATA_CHILD_1[it];
-            it++;
-          }
-          
-          vec temp = rbeta(n_sample, (double)n_0 + alpha, 
-            (double)n_1 + alpha );
-          theta.col(j) = temp;
+        if (sum(n_subgroups) != n_groups) {
+          List temp_list = anova_effect_size(I, level, top_direction);  
+          effect_size =  Rcpp::as<vec>(temp_list["effect_size"]);
+          alt_state_prob = Rcpp::as<double>(temp_list["alt_state_prob"]);
+        } else {
+          List temp_list = mrs_effect_size(I, level, top_direction);  
+          effect_size =  Rcpp::as<vec>(temp_list["effect_size"]);
+          alt_state_prob = Rcpp::as<double>(temp_list["alt_state_prob"]);          
         }
-              
-        for(int j = 0; j < n_groups; j++)
-          effect_size(j) = mean( abs(  log(theta.col(j)) - log(1.0 - theta.col(j)) 
-            - log( (sum(theta,1) - theta.col(j) )/(n_groups - 1.0)  )
-            + log( 1.0 - (sum(theta,1) - theta.col(j) )/(n_groups - 1.0)  ) ) ); 
 
-        double den = log(0.0);
-        for(int s = 0; s < n_states; s++)
-          den = log_exp_x_plus_exp_y(den, VARPHI_CURR[s]);
-        effect_size = effect_size * exp(VARPHI_CURR[1] - den);
-          
         bool flag = false;
         if( num_data_points_node > min_n_node )
         {
@@ -824,13 +868,94 @@ void class_tree::representative_subtree(  INDEX_TYPE& I,
         
         if(flag)
         {
-          save_index(I, level, exp(VARPHI_CURR[1] - den), effect_size, 
+          save_index(I, level, alt_state_prob, effect_size, 
             (top_direction+1), data_indices, node_index);  
         } 
     }   
 }
 
+Rcpp::List class_tree::mrs_effect_size(INDEX_TYPE& I, int level, int top_direction) {  
+  vec effect_size(n_groups); 
+  
+  int *DATA_CHILD_0, *DATA_CHILD_1;
+  DATA_CHILD_0 = get_child_data(I,top_direction,level,0);
+  DATA_CHILD_1 = get_child_data(I,top_direction,level,1);
+  double *VARPHI_CURR = get_node_varphi_post(I, level);
+  
+  int n_0, n_1;
+  int n_sample = 1000;
+  mat theta(n_sample, n_groups);
+  int it = 0;
+  for(int j = 0; j < n_groups; j++)
+  {
+    n_0 = 0;
+    n_1 = 0;
+    for(int i = 0; i < n_subgroups(j); i++)
+    {
+      n_0 += DATA_CHILD_0[it];
+      n_1 += DATA_CHILD_1[it];
+      it++;
+    }
+    
+    vec temp = rbeta(n_sample, (double)n_0 + alpha, (double)n_1 + alpha );
+    theta.col(j) = temp;
+  }
+        
+  for(int j = 0; j < n_groups; j++)
+    effect_size(j) = mean( abs(  log(theta.col(j)) - log(1.0 - theta.col(j)) 
+      - log( (sum(theta,1) - theta.col(j) )/(n_groups - 1.0)  )
+      + log( 1.0 - (sum(theta,1) - theta.col(j) )/(n_groups - 1.0)  ) ) ); 
 
+  double den = log(0.0);
+  for(int s = 0; s < n_states; s++)
+    den = log_exp_x_plus_exp_y(den, VARPHI_CURR[s]);
+  effect_size = effect_size * exp(VARPHI_CURR[1] - den);
+  
+  return Rcpp::List::create(  
+    Rcpp::Named( "effect_size" ) = effect_size,
+    Rcpp::Named( "alt_state_prob" ) = exp(VARPHI_CURR[1] - den)) ;    
+}
+
+
+Rcpp::List class_tree::anova_effect_size(INDEX_TYPE& I, int level, int top_direction) {  
+  
+  vec effect_size(n_groups); effect_size.fill(0);
+
+  double *VARPHI_CURR = get_node_varphi_post(I, level);
+  double *NU_CURR = get_node_nu_post(I, level);
+  double *THETA_CURR = get_node_theta_post(I, level);
+  int n_nu_grid = nu_vec.n_elem;
+
+  mat thetas(n_groups, n_nu_grid);
+  vec nus(n_nu_grid);
+
+
+  int it = 0;
+  for (int i = 0; i < n_nu_grid; i++) {
+    nus(i) = exp(NU_CURR[i]);
+    for(int j = 0; j < n_groups; j++) {
+      thetas(j,i) = THETA_CURR[it];
+      it++;
+    }
+  }    
+  
+  for (int i = 0; i < n_nu_grid; i++) {
+    for (int j = 0; j < n_groups; j++) {
+      effect_size(j) += nus(i) * (log(thetas(j, i)) - log(1.0 - thetas(j, i)) 
+        - log((sum(thetas.col(i)) - thetas(j, i))/(n_groups - 1.0))
+        + log(1.0 - (sum(thetas.col(i)) - thetas(j, i))/(n_groups - 1.0)));
+    }
+  }
+  
+  double den = log(0.0);
+  for(int s = 0; s < n_states; s++)
+    den = log_exp_x_plus_exp_y(den, VARPHI_CURR[s]);
+  effect_size = effect_size * exp(VARPHI_CURR[1] - den);
+  
+  return Rcpp::List::create(  
+    Rcpp::Named( "effect_size" ) = effect_size,
+    Rcpp::Named( "alt_state_prob" ) = exp(VARPHI_CURR[1] - den)) ;    
+}
 
 
 void class_tree::save_index(  INDEX_TYPE& I, 
@@ -1025,7 +1150,7 @@ void class_tree::init()
 {
   unsigned long  j, l;
   data = new int*[K+2];
-  modelscount = new unsigned long  int[K+2];
+  modelscount = new unsigned long int[K+2];
   chi = new double*[K+2];
   
   if(return_global_null == true)
@@ -1037,6 +1162,10 @@ void class_tree::init()
     varphi_post = new double*[K+1];
     lambda_post = new double*[K+1];  
     upsilon = new double*[K+2];
+    if (sum(n_subgroups) != n_groups) {
+      nu_post = new double*[K+1];
+      theta_post = new double*[K+1];
+    }
     map = new int*[K+1];
   }
   
@@ -1049,6 +1178,10 @@ void class_tree::init()
       xi_post[i] = new double[(unsigned long )(modelscount[i]*n_states*n_states) << i ];
       varphi_post[i] = new double[(unsigned long )(modelscount[i]*n_states) << i ];
       lambda_post[i] = new double[(unsigned long )(modelscount[i]*n_states*p) << i ];
+      if (sum(n_subgroups) != n_groups) {
+        nu_post[i] = new double[(unsigned long )(modelscount[i]*nu_vec.n_elem*p) << i ];
+        theta_post[i] = new double[(unsigned long )(modelscount[i]*nu_vec.n_elem*p*n_groups) << i ];
+      }
       map[i] = new int[(unsigned long )(modelscount[i]*n_states*3) << i ];
       
     } 
@@ -1075,7 +1208,7 @@ void class_tree::init()
   INDEX_TYPE I_root = init_index(0);  
   for(int i=0; i < n_tot; i++)
     add_data_to_subtree(I_root, 0, 1, 0, X.row(i).t(), cum_subgroups(G(i)-1) + H(i) - 1 );
-  
+      
 }
 
 void class_tree::add_data_to_subtree( INDEX_TYPE I, 
@@ -1106,7 +1239,15 @@ void class_tree::add_data_to_subtree( INDEX_TYPE I,
   
 }
 
+double * class_tree::get_node_nu_post(INDEX_TYPE& I, int level)
+{
+    return &nu_post[level][(get_node_index(I, level, nu_vec.n_elem * p))];
+}
 
+double * class_tree::get_node_theta_post(INDEX_TYPE& I, int level)
+{
+    return &theta_post[level][(get_node_index(I, level, nu_vec.n_elem * p * n_groups))];
+}
 
 double * class_tree::get_node_xi_post(INDEX_TYPE& I, int level)
 {
@@ -1217,6 +1358,11 @@ void class_tree::clear()
           delete [] map[i];
           delete [] varphi_post[i];
           delete [] xi_post[i];
+          if (sum(n_subgroups) != n_groups) {
+            delete [] nu_post[i];
+            delete [] theta_post[i];
+          }
+
         }               
       }
   }
@@ -1235,12 +1381,18 @@ void class_tree::clear()
     delete [] varphi_post; 
     delete [] xi_post; 
     delete [] upsilon; 
+    if (sum(n_subgroups) != n_groups) {
+      delete [] nu_post;
+      delete [] theta_post;
+    }
   }
   lambda_post = NULL;
   map = NULL;
   varphi_post = NULL;
   xi_post = NULL;  
   upsilon = NULL;
+  nu_post = NULL;
+  theta_post = NULL;
   
 }
 

@@ -73,12 +73,13 @@ plot1D <- function( ans,
   }
   else if(type == "eff")
   {
-    names = abs(ans$RepresentativeTree$EffectSizes[which(regions==1),group])    
-    #     col_range <- c(colorRampPalette(c("red","white"))(50), 
-    #                    colorRampPalette(c("white","dodgerblue"))(50))
-    #     col = col_range[ ceiling(names/max(abs(names)+0.01)*100/2+50) ]
-    col_range <- colorRampPalette(c("white","darkred"))(100)
-    col = col_range[ ceiling( names/max(names + 0.01)*99 + 1) ]
+#     names = ans$RepresentativeTree$EffectSizes[which(regions==1),group]
+#     col_range <- c(colorRampPalette(c("red","white"))(50), 
+#                    colorRampPalette(c("white","dodgerblue"))(50))
+#     col = col_range[ ceiling(names/max(abs(names)+0.01)*100/2+50) ]
+   names = abs(ans$RepresentativeTree$EffectSizes[which(regions==1),group])        
+   col_range <- colorRampPalette(c("white","darkred"))(100)
+   col = col_range[ ceiling( names/max(names + 0.01)*99 + 1) ]
     if (main == "default")
       main = paste("Effect Size Group", group)
   }

@@ -48,6 +48,8 @@ class class_tree
   void compute_varphi_post();
   // extract the MAP tree
   void representative_tree(); 
+
+
   
   // getters
   vector< Col< unsigned > > get_data_points_nodes();
@@ -77,6 +79,8 @@ class class_tree
   double **psi_post;
   double **lambda_post;
   double **varphi_post;
+  double **nu_post;
+  double **theta_post;
   int **map;
   unsigned long  *modelscount;
   
@@ -112,7 +116,8 @@ class class_tree
   // compute marginal likelihood at individual node for each state
   arma::vec compute_m(INDEX_TYPE& I, int level, int d);
   
-  arma::vec compute_m_anova(INDEX_TYPE& I, int level, int d);
+  // compute marginal likelihood for each value of nu, and the theta hat for each group under the alternative
+  Rcpp::List compute_m_anova(INDEX_TYPE& I, int level, int d);
 
 
   // return prior transition probability matrix
@@ -128,6 +133,12 @@ class class_tree
                                 Col<unsigned int> data_indices,
                                 Col<unsigned int> cut_counts,
                                 uword state_star ); 
+                                
+  //compute effect size for mrs model
+  Rcpp::List mrs_effect_size(INDEX_TYPE& I, int level, int top_direction);
+  // compute effect size for anova model
+  Rcpp::List anova_effect_size(INDEX_TYPE& I, int level, int top_direction);  
+
                                 
   void save_index(  INDEX_TYPE& I, 
                     int level,                
@@ -150,6 +161,8 @@ class class_tree
                             
                             
   // functions to retreive information about a node (or a child of a node)
+  double * get_node_nu_post(INDEX_TYPE& I, int level);
+  double * get_node_theta_post(INDEX_TYPE& I, int level);
   double * get_node_xi_post(INDEX_TYPE& I, int level);
   double * get_node_varphi_post(INDEX_TYPE& I, int level);
   double * get_node_psi_post(INDEX_TYPE& I, int level);
