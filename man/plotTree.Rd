@@ -5,7 +5,7 @@
 \title{Plot nodes of the representative tree}
 \usage{
 plotTree(ans, type = "prob", group = 1, legend = FALSE, main = "",
-  node.size = 5)
+  node.size = 5, abs = TRUE)
 }
 \arguments{
 \item{ans}{A \code{mrs} object.}
@@ -20,6 +20,9 @@ The options are \code{type = c("eff", "prob")}.}
 \item{main}{Main title. Default is \code{main = ""}.}
 
 \item{node.size}{Size of the nodes. Default is \code{node.size = 5}.}
+
+\item{abs}{If \code{TRUE}, plot the absolute value of the effect size.
+Only used when \code{type = "eff"}.}
 }
 \description{
 This function visualizes the representative tree of the output of the \code{\link{mrs}} function.

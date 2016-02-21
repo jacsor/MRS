@@ -902,9 +902,9 @@ Rcpp::List class_tree::mrs_effect_size(INDEX_TYPE& I, int level, int top_directi
   }
         
   for(int j = 0; j < n_groups; j++)
-    effect_size(j) = mean( abs(  log(theta.col(j)) - log(1.0 - theta.col(j)) 
+    effect_size(j) = mean(log(theta.col(j)) - log(1.0 - theta.col(j)) 
       - log( (sum(theta,1) - theta.col(j) )/(n_groups - 1.0)  )
-      + log( 1.0 - (sum(theta,1) - theta.col(j) )/(n_groups - 1.0)  ) ) ); 
+      + log( 1.0 - (sum(theta,1) - theta.col(j) )/(n_groups - 1.0)  ) ); 
 
   double den = log(0.0);
   for(int s = 0; s < n_states; s++)

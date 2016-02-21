@@ -7,7 +7,8 @@
 plot2D(ans, type = "prob", data.points = "all", background = "none",
   group = 1, dim = c(1, 2),
   levels = sort(unique(ans$RepresentativeTree$Levels)), regions = rep(1,
-  length(ans$RepresentativeTree$Levels)), legend = FALSE, main = "default")
+  length(ans$RepresentativeTree$Levels)), legend = FALSE, main = "default",
+  abs = TRUE)
 }
 \arguments{
 \item{ans}{An \code{mrs} object.}
@@ -38,6 +39,9 @@ The default is to plot all regions.}
 \item{legend}{Color legend for type. Default is \code{legend = FALSE}.}
 
 \item{main}{Overall title for the legend.}
+
+\item{abs}{If \code{TRUE}, plot the absolute value of the effect size.
+Only used when \code{type = "eff"}.}
 }
 \description{
 This function visualizes the regions of the representative tree

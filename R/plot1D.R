@@ -16,6 +16,8 @@
 #' The default is to plot all regions. 
 #' @param legend Color legend for type. Default is \code{legend = FALSE}.
 #' @param main Overall title for the plot.   
+#' @param abs If \code{TRUE}, plot the absolute value of the effect size. 
+#' Only used when \code{type = "eff"}.
 #' @references Soriano J. and Ma L. (2014). Multi-resolution two-sample comparison 
 #' through the divide-merge Markov tree. \emph{Preprint}. 
 #'  \url{http://arxiv.org/abs/1404.3753}
@@ -45,7 +47,8 @@ plot1D <- function( ans,
                     dim = 1,
                     regions = rep(1,length(ans$RepresentativeTree$Levels)),
                     legend = FALSE,
-                    main = "default")
+                    main = "default",
+                    abs = TRUE)
 {
   if(class(ans)!="mrs")
   {
@@ -73,13 +76,18 @@ plot1D <- function( ans,
   }
   else if(type == "eff")
   {
-#     names = ans$RepresentativeTree$EffectSizes[which(regions==1),group]
-#     col_range <- c(colorRampPalette(c("red","white"))(50), 
-#                    colorRampPalette(c("white","dodgerblue"))(50))
-#     col = col_range[ ceiling(names/max(abs(names)+0.01)*100/2+50) ]
-   names = abs(ans$RepresentativeTree$EffectSizes[which(regions==1),group])        
-   col_range <- colorRampPalette(c("white","darkred"))(100)
-   col = col_range[ ceiling( names/max(names + 0.01)*99 + 1) ]
+  
+   if (abs == TRUE) {
+     names = abs(ans$RepresentativeTree$EffectSizes[which(regions==1),group])        
+     col_range <- colorRampPalette(c("white","darkred"))(100)
+     col = col_range[ ceiling( names/max(names + 0.01)*99 + 1) ]
+   } else {
+     names = ans$RepresentativeTree$EffectSizes[which(regions==1), group]
+     col_range <- c(colorRampPalette(c("red","white"))(50), 
+                    colorRampPalette(c("white","dodgerblue"))(50))
+     col = col_range[ ceiling(names/max(abs(names)+0.01)*100/2+50) ]     
+   }  
+
     if (main == "default")
       main = paste("Effect Size Group", group)
   }
@@ -120,9 +128,16 @@ plot1D <- function( ans,
     rect(1.25, 1, 1.75, 2.0)
     if(type == "prob")
       mtext(formatC(seq(0,1,.1), format = "f", digits = 1),side=2,at=seq(1,2.,by=.1),las=2,cex=1, line=0)
-    if(type == "eff")
-      mtext(formatC(seq( 0, max(names), length.out=11), format = "f", digits = 1),
-            side=2,at=seq(1,2.,by=.1),las=2,cex=1, line=0)
+    if(type == "eff") {
+      if (abs == FALSE) {
+        mtext(formatC(seq( -max(abs(names)), max(abs(names)), length.out=11), format = "f", digits = 1),
+              side=2,at=seq(1,2.,by=.1),las=2,cex=1, line=0)
+      } else {
+        mtext(formatC(seq( 0, max(names), length.out=11), format = "f", digits = 1),
+              side=2,at=seq(1,2.,by=.1),las=2,cex=1, line=0)
+      }
+    }
+
     
   }
   
