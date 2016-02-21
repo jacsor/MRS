@@ -1,10 +1,10 @@
 
 library(MASS)
-
+set.seed(1)
 p = 1
 n_comp = 9
 n_groups = 2
-n_replicates = 3
+n_replicates = 10
 n_obs = 30
 mu0 = mvrnorm(n = 1, mu = rep(0,n_comp), Sigma = 0.8*diag(1,n_comp) + 0.2)
 W = array(NA, dim=c(n_comp, n_groups, n_replicates ))
@@ -33,8 +33,8 @@ for(i in 1:n_obs)
     {
       Z[j,k,i] = sample(1:n_comp,1, prob=W[,j,k])
       X[it] = rnorm(1, Z[j,k,i], .2)
-#      if(j == 1 && Z[j,k,i]==1  )
-#        X[it] = X[it] + 1
+      if(j == 1 && Z[j,k,i]==1  )
+        X[it] = X[it] + 1
       G[it] = j
       H[it] = k
       it = it + 1
@@ -45,9 +45,11 @@ for(i in 1:n_obs)
 
 
 library(MRS)
-ans_mrs = mrs_nested(X,G,H)
+ans_mrs = mrs_nested(X,G,H, K=6)
 
+plot1D(ans_mrs, type = "eff", legend = T, group = 1)
 
+plot1D(ans_mrs, legend = T)
 
 library(anovaDMMT)
 
