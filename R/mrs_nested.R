@@ -40,7 +40,7 @@
 #' ans = mrs_nested(X, G, H)
 #' ans$PostGlobNull
 #' plot1D(ans)
-mrs_nested <- function(  X, 
+andova <- function(  X, 
                          G, 
                          H,
                          n_groups = length(unique(G)), 
