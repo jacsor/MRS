@@ -1,4 +1,4 @@
-Probabilistic multi-resolution scanning for cross-sample differences
+Probabilistic multi-resolution scanning for two-sample differences
 ================================
 
 This package fits the MRS algorithm for comparison across probability distributions. 
