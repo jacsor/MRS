@@ -749,9 +749,11 @@ double class_tree::prior_transition(int s, int t, int level)
     if( s == 1 )   // alternative
     {
         if( t == 1 )  // alternative
-            return( log( 1.0 - eta) + log(gamma) -level*log(beta)  );    
+            // return( log( 1.0 - eta) + log(gamma) -level*log(beta)  );
+            return( log(1.0-eta) + log(beta)  ); 
         else if( t == 0 )   // null
-            return( log(1.0 - eta) + log( 1.0 -  gamma*pow( beta , -level ) ) ); 
+            //return( log(1.0 - eta) + log( 1.0 -  gamma*pow( beta , -level ) ) ); 
+            return( log(1.0-eta) + log(1-beta) );
         else
           return log(eta);        
    
