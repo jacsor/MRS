@@ -29,4 +29,4 @@ plotTree(ans)
 ```
 
 ### Reference
-Soriano J. and Ma L. (2014). Multi-resolution two-sample comparison through the divide-merge Markov tree. (http://arxiv.org/abs/1404.3753)
+Soriano J. and Ma L. (2015). Probabilistic multi-resolution scanning for two-sample differences. JRSS-B (To appear)
