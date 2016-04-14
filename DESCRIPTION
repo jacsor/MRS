@@ -4,7 +4,7 @@ Title: Multi-Resolution Scanning for Cross-Sample Differences
 Version: 1.1
 Date: 2016-01-23
 Author: Jacopo Soriano and Li Ma
-Maintainer: Jacopo Soriano <jsoriano.stat@gmail.com>
+Maintainer: Jacopo Soriano <jsoriano.stat@gmail.com> and Li Ma <li.ma@duke.edu>
 Description: An implementation of the MRS algorithm for comparison across distributions. 
   The model is based on a nonparametric process taking the form of a Markov model 
   that transitions between a "null" and an "alternative" state 
