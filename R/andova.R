@@ -118,6 +118,13 @@ andova <- function(  X,
     print("ERROR: 0 <= gamma <= 1")
     return(0);
   }
+  
+  if( delta < 0 | delta > 1 )
+  {
+    print("ERROR: 0 <= delta <= 1")
+    return(0);
+  }
+  
   ans = fitMRSNESTEDcpp( X, 
                          G, 
                          H,
