@@ -37,6 +37,7 @@ mrs <- function( X,
                  init_state = NULL, 
                  beta = 1.0, 
                  gamma = 0.3, 
+                 delta = NULL,
                  eta = 0.3, 
                  alpha = 0.5,
                  return_global_null = TRUE,
@@ -100,7 +101,14 @@ mrs <- function( X,
     return(0);
   }
   
-  ans = fitMRScpp(X, G, n_groups, init_state, Omega, K, alpha, beta, gamma, eta, return_global_null, return_tree, min_n_node)
+  if (is.null(delta)) delta = gamma
+  else if (delta < 0 | delta > 1) 
+  {
+    print("ERROR: 0 <= delta <= 1")
+    return(0);
+  }
+  
+  ans = fitMRScpp(X, G, n_groups, init_state, Omega, K, alpha, beta, gamma, delta, eta, return_global_null, return_tree, min_n_node)
 
   if (return_tree) {
     ans$RepresentativeTree$EffectSizes = matrix( unlist(ans$RepresentativeTree$EffectSizes), 
