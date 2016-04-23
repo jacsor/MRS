@@ -16,7 +16,8 @@ Rcpp::List fitMRScpp( arma::mat X,
                       int K = 5, 
                       double alpha = 0.5, 
                       double beta = 1.0, 
-                      double gamma = 0.3, 
+                      double gamma = 0.3,
+                      double delta = 0.3,
                       double eta = 0.3,
                       bool return_global_null = true,
                       bool return_tree = true,
@@ -64,6 +65,7 @@ Rcpp::List fitMRScpp( arma::mat X,
                       alpha, 
                       beta, 
                       gamma, 
+                      delta,
                       eta, 
                       return_global_null, 
                       return_tree,
@@ -89,7 +91,8 @@ Rcpp::List fitMRScpp( arma::mat X,
     Rcpp::Named("alpha") = alpha,
     Rcpp::Named("eta") = eta,
     Rcpp::Named("beta") = beta,
-    Rcpp::Named("gamma") = gamma
+    Rcpp::Named("gamma") = gamma,
+    Rcpp::Named("delta") = delta
   );
   
   if(return_tree == true)
@@ -160,8 +163,9 @@ Rcpp::List fitMRSNESTEDcpp( arma::mat X,
                             int K = 5,                             
                             double alpha = 0.5, 
                             double beta = 1.0, 
-                            double gamma = 0.3, 
-                            double eta = 0.3,
+                            double gamma = 0.07, 
+                            double delta = 0.4,
+                            double eta = 0,
                             bool return_global_null = true,
                             bool return_tree = true
                           )
@@ -201,6 +205,7 @@ Rcpp::List fitMRSNESTEDcpp( arma::mat X,
                       alpha, 
                       beta, 
                       gamma, 
+                      delta,
                       eta, 
                       return_global_null, 
                       return_tree);
@@ -228,6 +233,7 @@ Rcpp::List fitMRSNESTEDcpp( arma::mat X,
     Rcpp::Named("eta") = eta,
     Rcpp::Named("beta") = beta,
     Rcpp::Named("gamma") = gamma,
+    Rcpp::Named("delta") = delta,
     Rcpp::Named("nu_vec") = nu_vec
   );
   
