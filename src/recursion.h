@@ -36,6 +36,7 @@ class class_tree
               double alpha = 0.5,
               double beta = 1.0,
               double gamma = 0.3,
+              double delta = 0.3,
               double eta = 0.3,
               bool return_global_null = true,
               bool return_tree = true,
