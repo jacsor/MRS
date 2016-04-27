@@ -1,7 +1,7 @@
 Package: MRS
 Type: Package
 Title: Multi-Resolution Scanning for Cross-Sample Differences
-Version: 1.1
+Version: 1.2
 Date: 2016-04-26
 Author: Jacopo Soriano and Li Ma
 Maintainer: Jacopo Soriano <jsoriano.stat@gmail.com> and Li Ma <li.ma@duke.edu>
