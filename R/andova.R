@@ -37,7 +37,7 @@
 #' G = c(rep(1,n),rep(2,n))
 #' H = sample(3,2*n, replace = TRUE  )
 #' 
-#' ans = mrs_nested(X, G, H)
+#' ans = andova(X, G, H)
 #' ans$PostGlobNull
 #' plot1D(ans)
 andova <- function(  X, 
