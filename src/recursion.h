@@ -21,7 +21,7 @@ class class_tree
   arma::vec nu_vec;  // discrete prior on the parameter nu
   int K;    // maximum depth of the tree
   double alpha;   // pseudo-counts
-  double beta, gamma, eta;  // parameters of the transition probability matrix
+  double beta, gamma, delta, eta;  // parameters of the transition probability matrix
   bool return_global_null, return_tree;
   int min_n_node;   // Node in the tree is returned if there are more than min_n_node data-points in it.
   //constructor
