@@ -1,4 +1,4 @@
-#' Multi Resolution Scanning for nested design
+#' Multi Resolution Scanning for one-way ANDOVA using the multi-scale Beta-Binomial model
 #'
 #' This function executes the Multi Resolution Scanning algorithm to detect differences 
 #' across the distributions of multiple groups having multiple replicates.
@@ -37,10 +37,10 @@
 #' G = c(rep(1,n),rep(2,n))
 #' H = sample(3,2*n, replace = TRUE  )
 #' 
-#' ans = mrs_nested(X, G, H)
+#' ans = andova(X, G, H)
 #' ans$PostGlobNull
 #' plot1D(ans)
-mrs_nested <- function(  X, 
+andova <- function(  X, 
                          G, 
                          H,
                          n_groups = length(unique(G)), 
@@ -49,8 +49,9 @@ mrs_nested <- function(  X,
                          K = 6, 
                          init_state = c(0.8,0.2,0), 
                          beta = 1.0, 
-                         gamma = 0.3, 
-                         eta = 0.3, 
+                         gamma = 0.07, 
+                         delta = 0.4,
+                         eta = 0, 
                          alpha = 0.5,
                          nu_vec = 10^(seq(-1,4)),
                          return_global_null = TRUE,
@@ -117,6 +118,13 @@ mrs_nested <- function(  X,
     print("ERROR: 0 <= gamma <= 1")
     return(0);
   }
+  
+  if( delta < 0 | delta > 1 )
+  {
+    print("ERROR: 0 <= delta <= 1")
+    return(0);
+  }
+  
   ans = fitMRSNESTEDcpp( X, 
                          G, 
                          H,
@@ -128,7 +136,8 @@ mrs_nested <- function(  X,
                          K,
                          alpha, 
                          beta, 
-                         gamma, 
+                         gamma,
+                         delta,
                          eta, 
                          return_global_null, 
                          return_tree )

@@ -17,6 +17,7 @@ class_tree::class_tree( Mat<unsigned int> X,
                         double alpha,
                         double beta,
                         double gamma,
+                        double delta,
                         double eta,
                         bool return_global_null,
                         bool return_tree,
@@ -32,6 +33,7 @@ class_tree::class_tree( Mat<unsigned int> X,
                         alpha(alpha),
                         beta(beta),
                         gamma(gamma),
+                        delta(delta),
                         eta(eta),
                         return_global_null(return_global_null),
                         return_tree(return_tree),
@@ -749,9 +751,11 @@ double class_tree::prior_transition(int s, int t, int level)
     if( s == 1 )   // alternative
     {
         if( t == 1 )  // alternative
-            return( log( 1.0 - eta) + log(gamma) -level*log(beta)  );    
+            return( log( 1.0 - eta) + log(delta) -level*log(beta)  );
+            
         else if( t == 0 )   // null
-            return( log(1.0 - eta) + log( 1.0 -  gamma*pow( beta , -level ) ) ); 
+            return( log(1.0 - eta) + log( 1.0 -  delta*pow( beta , -level ) ) ); 
+            
         else
           return log(eta);        
    

@@ -1,4 +1,4 @@
-Probabilistic multi-resolution scanning for cross-sample differences
+Probabilistic multi-resolution scanning for cross-sample variation
 ================================
 
 This package fits the MRS algorithm for comparison across probability distributions. 
@@ -21,7 +21,7 @@ There are six functions in this package, and their descriptions are provided in 
 
 ```S
 ans = mrs(X, G)
-ans = mrs_nested(X, G, H)
+ans = andova(X, G, H)
 summary(ans)
 plot1D(ans)
 plot2D(ans)
@@ -29,4 +29,6 @@ plotTree(ans)
 ```
 
 ### Reference
-Soriano J. and Ma L. (2014). Multi-resolution two-sample comparison through the divide-merge Markov tree. (http://arxiv.org/abs/1404.3753)
+Soriano J. and Ma L. (2015). Probabilistic multi-resolution scanning for two-sample differences. JRSS-B (To appear).
+
+Ma L. and Soriano J. (2016). Analysis of distributional variation through multi-scale Beta-Binomial modeling. http://arxiv.org/abs/1604.01443
