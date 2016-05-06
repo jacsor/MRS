@@ -45,7 +45,7 @@ for(i in 1:n_obs)
 
 
 library(MRS)
-ans_mrs = mrs_nested(X,G,H, K=6)
+ans_mrs = andova(X,G,H, K=6)
 
 plot1D(ans_mrs, type = "eff", legend = T, group = 1)
 
