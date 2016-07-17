@@ -15,9 +15,14 @@
 #' @param node.size Size of the nodes. Default is \code{node.size = 5}.
 #' @param abs If \code{TRUE}, plot the absolute value of the effect size. 
 #' Only used when \code{type = "eff"}.
-#' @references Soriano J. and Ma L. (2014). Multi-resolution two-sample comparison 
-#' through the divide-merge Markov tree. \emph{Preprint}. 
-#'  \url{http://arxiv.org/abs/1404.3753}
+#' @references Soriano J. and Ma L. (2016). 
+#' Probabilistic multi-resolution scanning for two-sample differences. 
+#'  \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}. 
+#'  \url{http://onlinelibrary.wiley.com/doi/10.1111/rssb.12180/abstract}
+#' @references Ma L. and Soriano J. (2016). 
+#' Analysis of distributional variation through multi-scale Beta-Binomial modeling. 
+#'  \emph{arXiv}. 
+#'  \url{http://arxiv.org/abs/1604.01443}
 #' @export
 #' @note The package \pkg{igraph} is required.
 #' @examples

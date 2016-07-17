@@ -2,12 +2,12 @@
 % Please edit documentation in R/andova.R
 \name{andova}
 \alias{andova}
-\title{Analysis of distributional variation through multi-scale Beta-Binomial modeling}
+\title{Multi Resolution Scanning for one-way ANDOVA using the multi-scale Beta-Binomial model}
 \usage{
 andova(X, G, H, n_groups = length(unique(G)), n_subgroups = NULL,
   Omega = "default", K = 6, init_state = c(0.8, 0.2, 0), beta = 1,
-  gamma = 0.3, eta = 0.3, alpha = 0.5, nu_vec = 10^(seq(-1, 4)),
-  return_global_null = TRUE, return_tree = TRUE)
+  gamma = 0.07, delta = 0.4, eta = 0, alpha = 0.5,
+  nu_vec = 10^(seq(-1, 4)), return_global_null = TRUE, return_tree = TRUE)
 }
 \arguments{
 \item{X}{Matrix of the data. Each row represents an observation.}
@@ -24,16 +24,18 @@ andova(X, G, H, n_groups = length(unique(G)), n_subgroups = NULL,
 The \code{"default"} option defines a hyperrectangle containing all the data points.
 Otherwise the user can define a matrix  where each row represents a dimension,  and the two columns contain the associated lower and upper limit.}
 
-\item{K}{Depth of the tree. Default is \code{K = 5}, while the maximum is \code{K = 14}.}
+\item{K}{Depth of the tree. Default is \code{K = 6}, while the maximum is \code{K = 14}.}
 
 \item{init_state}{Initial state of the hidden Markov process.
 The three states are \emph{null}, \emph{altenrative} and \emph{prune}, respectively.}
 
-\item{beta}{Spatial clustering parameter of the transition probability matrix.}
+\item{beta}{Spatial clustering parameter of the transition probability matrix. Default is \code{beta = 1.0}.}
 
-\item{gamma}{Parameter of the transition probability matrix.}
+\item{gamma}{Parameter of the transition probability matrix. Default is \code{gamma = 0.07}.}
 
-\item{eta}{Parameter of the transition probability matrix. Default is \code{eta = 0.3}.}
+\item{delta}{Parameter of the transition probability matrix. Default is \code{delta = 0.4}.}
+
+\item{eta}{Parameter of the transition probability matrix. Default is \code{eta = 0.0}.}
 
 \item{alpha}{Pseudo-counts of the Beta random probability assignments.}
 
@@ -68,3 +70,10 @@ ans = andova(X, G, H)
 ans$PostGlobNull
 plot1D(ans)
 }
+\references{
+Ma L. and Soriano J. (2016).
+Analysis of distributional variation through multi-scale Beta-Binomial modeling.
+ \emph{arXiv}.
+ \url{http://arxiv.org/abs/1604.01443}
+}
+

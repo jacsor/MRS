@@ -5,8 +5,9 @@
 \title{Multi Resolution Scanning}
 \usage{
 mrs(X, G, n_groups = length(unique(G)), Omega = "default", K = 6,
-  init_state = NULL, beta = 1, gamma = 0.3, eta = 0.3, alpha = 0.5,
-  return_global_null = TRUE, return_tree = TRUE, min_n_node = 0)
+  init_state = NULL, beta = 1, gamma = 0.3, delta = NULL, eta = 0.3,
+  alpha = 0.5, return_global_null = TRUE, return_tree = TRUE,
+  min_n_node = 0)
 }
 \arguments{
 \item{X}{Matrix of the data. Each row represents an observation.}
@@ -20,7 +21,7 @@ The \code{"default"} option defines a hyperrectangle containing all the data poi
 Otherwise the user can define a matrix  where each row represents a dimension,
 and the two columns contain the associated lower and upper limits for each dimension.}
 
-\item{K}{Depth of the tree. Default is \code{K = 5}, while the maximum is \code{K = 14}.}
+\item{K}{Depth of the tree. Default is \code{K = 6}, while the maximum is \code{K = 14}.}
 
 \item{init_state}{Initial state of the hidden Markov process.
 The three states are \emph{null}, \emph{altenrative} and \emph{prune}, respectively.}
@@ -28,6 +29,8 @@ The three states are \emph{null}, \emph{altenrative} and \emph{prune}, respectiv
 \item{beta}{Spatial clustering parameter of the transition probability matrix. Default is \code{beta = 1}.}
 
 \item{gamma}{Parameter of the transition probability matrix. Default is \code{gamma = 0.3}.}
+
+\item{delta}{Optional parameter of the transition probability matrix. Default is \code{delta = NULL}.}
 
 \item{eta}{Parameter of the transition probability matrix. Default is \code{eta = 0.3}.}
 
@@ -53,5 +56,11 @@ p = 2
 X = matrix(c(runif(p*n/2),rbeta(p*n/2, 1, 4)), nrow=n, byrow=TRUE)
 G = c(rep(1,n/2), rep(2,n/2))
 ans = mrs(X=X, G=G)
+}
+\references{
+Soriano J. and Ma L. (2016).
+Probabilistic multi-resolution scanning for two-sample differences.
+ \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}.
+ \url{http://onlinelibrary.wiley.com/doi/10.1111/rssb.12180/abstract}
 }
 

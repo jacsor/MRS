@@ -73,8 +73,14 @@ plot2D(ans, type="none", data.points = "differential",
  background = "smeared", levels = 4)
 }
 \references{
-Soriano J. and Ma L. (2014). Multi-resolution two-sample comparison
-through the divide-merge Markov tree. \emph{Preprint}.
- \url{http://arxiv.org/abs/1404.3753}
+Soriano J. and Ma L. (2016).
+Probabilistic multi-resolution scanning for two-sample differences.
+ \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}.
+ \url{http://onlinelibrary.wiley.com/doi/10.1111/rssb.12180/abstract}
+
+Ma L. and Soriano J. (2016).
+Analysis of distributional variation through multi-scale Beta-Binomial modeling.
+ \emph{arXiv}.
+ \url{http://arxiv.org/abs/1604.01443}
 }
 

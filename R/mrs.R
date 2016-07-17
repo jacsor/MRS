@@ -10,17 +10,22 @@
 #' The \code{"default"} option defines a hyperrectangle containing all the data points.
 #' Otherwise the user can define a matrix  where each row represents a dimension,  
 #' and the two columns contain the associated lower and upper limits for each dimension.
-#' @param K Depth of the tree. Default is \code{K = 5}, while the maximum is \code{K = 14}.
+#' @param K Depth of the tree. Default is \code{K = 6}, while the maximum is \code{K = 14}.
 #' @param init_state Initial state of the hidden Markov process.
 #' The three states are \emph{null}, \emph{altenrative} and \emph{prune}, respectively.
 #' @param beta Spatial clustering parameter of the transition probability matrix. Default is \code{beta = 1}.
 #' @param gamma Parameter of the transition probability matrix. Default is \code{gamma = 0.3}.
+#' @param delta Optional parameter of the transition probability matrix. Default is \code{delta = NULL}.
 #' @param eta Parameter of the transition probability matrix. Default is \code{eta = 0.3}.
 #' @param alpha Pseudo-counts of the Beta random probability assignments. Default is \code{alpha = 0.5}.
 #' @param return_global_null Boolean indicating whether to return the posterior probability of the global null hypothesis.
 #' @param return_tree Boolean indicating whether to return the posterior representative tree. 
 #' @param min_n_node Node in the tree is returned if there are more than \code{min_n_node} data-points in it.  
 #' @return An \code{mrs} object. 
+#' @references Soriano J. and Ma L. (2016). 
+#' Probabilistic multi-resolution scanning for two-sample differences. 
+#'  \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}. 
+#'  \url{http://onlinelibrary.wiley.com/doi/10.1111/rssb.12180/abstract}
 #' @export
 #' @examples
 #' set.seed(1) 

@@ -11,17 +11,22 @@
 #' @param Omega Matrix defining the vertices of the sample space. 
 #' The \code{"default"} option defines a hyperrectangle containing all the data points.
 #' Otherwise the user can define a matrix  where each row represents a dimension,  and the two columns contain the associated lower and upper limit.
-#' @param K Depth of the tree. Default is \code{K = 5}, while the maximum is \code{K = 14}.
+#' @param K Depth of the tree. Default is \code{K = 6}, while the maximum is \code{K = 14}.
 #' @param init_state Initial state of the hidden Markov process.
 #' The three states are \emph{null}, \emph{altenrative} and \emph{prune}, respectively.
-#' @param beta Spatial clustering parameter of the transition probability matrix.
-#' @param gamma Parameter of the transition probability matrix.
-#' @param eta Parameter of the transition probability matrix. Default is \code{eta = 0.3}.
+#' @param beta Spatial clustering parameter of the transition probability matrix. Default is \code{beta = 1.0}.
+#' @param gamma Parameter of the transition probability matrix. Default is \code{gamma = 0.07}.
+#' @param delta Parameter of the transition probability matrix. Default is \code{delta = 0.4}.
+#' @param eta Parameter of the transition probability matrix. Default is \code{eta = 0.0}.
 #' @param alpha Pseudo-counts of the Beta random probability assignments.
 #' @param nu_vec The support of the discrete uniform prior on nu.
 #' @param return_global_null Boolean indicating whether to return the marginal posterior probability of the global null.
 #' @param return_tree Boolean indicating whether to return the posterior representative tree. 
 #' @return An \code{mrs} object. 
+#' @references Ma L. and Soriano J. (2016). 
+#' Analysis of distributional variation through multi-scale Beta-Binomial modeling. 
+#'  \emph{arXiv}. 
+#'  \url{http://arxiv.org/abs/1604.01443}
 #' @export
 #' @examples
 #' set.seed(1) 
