@@ -300,6 +300,7 @@ void class_tree::compute_map(INDEX_TYPE& I, int level, arma::mat lambda_post)
   double max_val;
   if(level == K)
   {
+    it = 0;
     vec like_vec(p);
     for(int s = 0; s < n_states; s++)  
     {           
