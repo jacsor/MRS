@@ -46,31 +46,21 @@ for(i in 1:n_obs)
 
 library(MRS)
 ans_mrs = andova(X,G,H, K=6)
-
 plot1D(ans_mrs, type = "eff", legend = T, group = 1)
-
+plot1D(ans_mrs, type = "eff", legend = T, group = 2)
 plot1D(ans_mrs, legend = T)
 
-library(anovaDMMT)
+## Draw and plot posterior samples of effect sizes
+n_post_samples = 100
+ans_mrs = andova(X,G,H, K=6,n_post_samples = n_post_samples)
+for (sample_id in 1:n_post_samples) {
 
-Omega = matrix( range(X), nrow = 1)
-tau2 = seq(0.001, 100, length=100)
-init_state = c(0,1)
-noise = matrix(rnorm(n_groups * n_replicates * n_obs))
-for( i in 1:length(tau2))
-{  
-  ans = fitAnovaDMMTcpp(matrix(X),G, noise, isBinary = c(0,0), J=2, K = 6, init_state=init_state, Omega=Omega, rho_star = 0.5, tau2=tau2[i])  
-  post_null[i] = ans$PosteriorNull
-  like[i] = exp(ans$LogLikelihood)  
+  ans_mrs$RepresentativeTree = ans_mrs$PostSamples[[sample_id]]
+  ans_mrs$RepresentativeTree$EffectSizes[is.nan(ans_mrs$RepresentativeTree$EffectSizes)]=0
+  plot1D(ans_mrs, type = "eff", legend = T, group = 1, main =paste("Sample",sample_id))
+  # plot1D(ans_mrs, legend = T, group = 1, main =paste("Sample",sample_id))
+  
+
 }
 
-
-ans_mrs$PostGlobNull
-plot1D(ans_mrs)
-
-
-par(mfrow=c(1,2))
-sum( like*post_null / sum(like) )
-plot(like)
-plot(post_null, ylim = c(0,1))
 
