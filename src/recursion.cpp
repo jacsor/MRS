@@ -21,7 +21,9 @@ class_tree::class_tree( Mat<unsigned int> X,
                         double eta,
                         bool return_global_null,
                         bool return_tree,
-                        int min_n_node):
+                        int n_post_samples,
+                        int min_n_node
+                        ):
                         X(X),
                         G(G),
                         H(H),
@@ -37,6 +39,7 @@ class_tree::class_tree( Mat<unsigned int> X,
                         eta(eta),
                         return_global_null(return_global_null),
                         return_tree(return_tree),
+                        n_post_samples(n_post_samples),
                         min_n_node(min_n_node)
 {
   n_tot = X.n_rows;
@@ -45,6 +48,9 @@ class_tree::class_tree( Mat<unsigned int> X,
   cum_subgroups.set_size(n_subgroups.n_elem + 1);
   cum_subgroups(0) = 0;
   cum_subgroups.subvec(1, n_subgroups.n_elem) = cumsum(n_subgroups);
+  
+  result_cubes_post_samples.reserve(n_post_samples);
+  
   init();
 }
 
@@ -640,6 +646,7 @@ Rcpp::List class_tree::compute_m_anova(INDEX_TYPE& I, int level, int d)
   int n_grid = nu_vec.n_elem;
   vec m_nus(n_grid + 1); m_nus.fill(log(0.0));
   mat thetas(n_groups, n_grid); thetas.fill(0.5);
+  mat var_thetas(n_groups,n_grid); var_thetas.fill(0);
   int n_grid_theta = 4;
   vec theta0(n_grid_theta);
   theta0 << 0.125 << 0.375 << 0.625 << 0.875 ;
@@ -713,6 +720,7 @@ Rcpp::List class_tree::compute_m_anova(INDEX_TYPE& I, int level, int d)
         else {
           temp_mat(j,g) = tt(1);
           thetas(j,g) = tt(0);
+          var_thetas(j,g) = tt(2); // the approximate posterior Gaussian variance for theta
         }
       }
          
@@ -724,7 +732,9 @@ Rcpp::List class_tree::compute_m_anova(INDEX_TYPE& I, int level, int d)
     
   return Rcpp::List::create(  
   Rcpp::Named( "m_nus" ) = m_nus,
-  Rcpp::Named( "thetas" ) = thetas);  
+  Rcpp::Named( "thetas" ) = thetas,  
+  Rcpp::Named( "var_thetas" ) = var_thetas
+  );
 }
 
 
@@ -879,6 +889,157 @@ void class_tree::representative_subtree(  INDEX_TYPE& I,
     }   
 }
 
+void class_tree::sample_tree() 
+{   
+  // function to find nested sequence of regions with probability 
+  INDEX_TYPE I_root = init_index(0); 
+  Col< unsigned int > data_indices(n_tot);
+  Col< unsigned int > cut_counts(p); cut_counts.fill(0);
+  result_cubes_type result_cubes_sample;
+  
+  for(int i=0; i < n_tot; i++)  
+    data_indices(i) = i+1;
+  
+  
+  int sample_id = 0;
+
+  for (sample_id = 0; sample_id < n_post_samples; sample_id++ ) {
+    result_cubes_sample.clear();
+    result_cubes_post_samples.push_back(result_cubes_sample);
+    
+    sample_subtree(I_root, 0, 0, X, data_indices, cut_counts, 0, sample_id);
+  }
+}
+
+void class_tree::sample_subtree(  INDEX_TYPE& I, 
+                                          int level, 
+                                          unsigned short node_index, 
+                                          Mat<unsigned int> X_binary,
+                                          Col<unsigned int> data_indices,
+                                          Col<unsigned int> cut_counts,
+                                          uword state_par,
+                                          int sample_id
+) 
+{
+
+  if (level == 0) state_par = 0;
+  
+  if ( level <= K ) 
+  { 
+    
+    int state, direction;        
+    INDEX_TYPE J_0, J_1;
+    unsigned short new_node_index_0, new_node_index_1;      
+    
+    mat xi_post(n_states, n_states);
+    vec lambda_post(n_states,p);
+    
+    double *XI_CURR = get_node_xi_post(I, level);
+    double *LAMBDA_CURR = get_node_lambda_post(I, level);  
+    
+    
+    // Get the posterior partition probabilities
+    int it = 0;
+    for(int s = 0; s < n_states; s++)
+    {
+      for(int d = 0; d < p; d++)
+      {
+        lambda_post(s,d) = exp(LAMBDA_CURR[it]);
+        it++;
+      }              
+    }  
+    
+    // Get the posterior state transition matrix
+    it = 0;
+    for(int s = 0; s < n_states; s++)
+    {
+      for(int t = 0; t < n_states; t++)
+      {
+        xi_post(s,t) = XI_CURR[it];
+        it++;
+      }  
+    }
+    
+    // first sample state 
+    double u = runif(1)[0];
+    
+    double cum_prob_curr = 0;
+      
+    int i,t;
+    
+    for (t = 0; t < n_states && cum_prob_curr < u; t++) {
+      cum_prob_curr += exp(xi_post(state_par,t));
+      
+    }
+    // after the loop (t - 1) will be equal to the state
+    state = t - 1; // state now is the sampled state
+      
+    // next sample partition direction
+    double v = runif(1)[0];
+    cum_prob_curr = 0;
+      
+    for(i = 0; i < p && cum_prob_curr < v; i++  ) {
+      cum_prob_curr += exp(lambda_post(state,i)); 
+    }
+    direction = i - 1;
+    
+    int *DATA_CURR = get_node_data(I, level);
+    int  num_data_points_node = sum_elem(DATA_CURR, sum(n_subgroups));
+    
+    vec effect_size_sample(n_groups);
+    
+    if (sum(n_subgroups) != n_groups) {
+        List temp_list = anova_sample_effect_size(I, level, direction,state);  
+        effect_size_sample =  Rcpp::as<vec>(temp_list["effect_size_sample"]);
+        
+    } else {
+        List temp_list = mrs_sample_effect_size(I, level, direction, state);  
+        effect_size_sample =  Rcpp::as<vec>(temp_list["effect_size_sample"]);
+    }
+    
+    bool flag = false;
+    if( num_data_points_node > min_n_node )
+    {
+        flag = true;
+      
+        vector<unsigned int> left_indices, right_indices;
+        for(int i=0; i<(int)X_binary.n_rows; i++)
+        {
+          if( ( X_binary(i,direction) >> cut_counts(direction))  & 1 )
+            right_indices.push_back(i);
+          else
+            left_indices.push_back(i);
+        }
+        cut_counts(direction)++;
+      
+        Col<unsigned int> l_indices = conv_to< Col<unsigned int> >::from(left_indices);
+        Col<unsigned int> r_indices = conv_to< Col<unsigned int> >::from(right_indices);
+      
+        // move to the 2 children of the set    
+      
+        J_0 = make_child_index(I, direction, level, 0 );
+        new_node_index_0 =  node_index << 1 ;
+        sample_subtree(J_0, level+1, new_node_index_0, 
+                               X_binary.rows(l_indices), data_indices(l_indices), cut_counts, state, sample_id); 
+      
+        J_1 = make_child_index(I, direction, level, 1 );
+        new_node_index_1 =  ( node_index << 1 ) | 1 ;	
+      
+        sample_subtree(J_1, level+1, new_node_index_1, 
+                     X_binary.rows(r_indices), data_indices(r_indices), cut_counts, state, sample_id); 
+      
+ 
+    }
+    
+    if(flag)
+    {
+      save_index_sample(I, level, state, effect_size_sample, 
+                 (direction+1), data_indices, node_index, sample_id);  
+    } 
+  }   
+
+}
+
 Rcpp::List class_tree::mrs_effect_size(INDEX_TYPE& I, int level, int top_direction) {  
   vec effect_size(n_groups); 
   
@@ -962,6 +1123,99 @@ Rcpp::List class_tree::anova_effect_size(INDEX_TYPE& I, int level, int top_direc
     Rcpp::Named( "alt_state_prob" ) = exp(VARPHI_CURR[1] - den)) ;    
 }
 
+Rcpp::List class_tree::mrs_sample_effect_size(INDEX_TYPE& I, int level, int direction, int state) {  
+  
+  vec effect_size_sample(n_groups); effect_size_sample.fill(0);
+  vec thetas_sample(n_groups); thetas_sample.fill(0);
+  
+  if (state > 0) { // if not null (so effect size is non-zero)
+    int *DATA_CHILD_0, *DATA_CHILD_1;
+    DATA_CHILD_0 = get_child_data(I,direction,level,0);
+    DATA_CHILD_1 = get_child_data(I,direction,level,1);
+    double *VARPHI_CURR = get_node_varphi_post(I, level);
+    
+    int n_0, n_1;
+    // int n_sample = 1000;
+
+    int it = 0;
+    for(int j = 0; j < n_groups; j++)
+    {
+      n_0 = 0;
+      n_1 = 0;
+      for(int i = 0; i < n_subgroups(j); i++)
+      {
+        n_0 += DATA_CHILD_0[it];
+        n_1 += DATA_CHILD_1[it];
+        it++;
+      }
+      
+      thetas_sample(j) = rbeta(1, (double)n_0 + alpha, (double)n_1 + alpha )(0);
+    }
+    
+    for(int j = 0; j < n_groups; j++)
+      effect_size_sample(j) = log(thetas_sample(j)) - log(1.0 - thetas_sample(j)) 
+                              - log( (sum(thetas_sample) - thetas_sample(j) )/(n_groups - 1.0)  )
+                              + log( 1.0 - (sum(thetas_sample) - thetas_sample(j) )/(n_groups - 1.0)  ); 
+                              
+  }
+  
+  return Rcpp::List::create(  
+    Rcpp::Named( "thetas_sample" ) = thetas_sample,
+    Rcpp::Named( "effect_size_sample" ) = effect_size_sample
+  );
+}
+
+Rcpp::List class_tree::anova_sample_effect_size(INDEX_TYPE& I, int level, int direction, int state) {  
+  
+  vec effect_size_sample(n_groups); effect_size_sample.fill(0);
+  vec thetas_sample(n_groups); thetas_sample.fill(0);
+  
+  int n_nu_grid = nu_vec.n_elem;
+
+  if (state > 0) { // if not null (so effect size is non-zero)
+  
+  List list_m_thetas = compute_m_anova(I, level, direction);
+  vec m_nus = Rcpp::as<vec>(list_m_thetas["m_nus"]);
+  mat theta_mean = Rcpp::as<mat>(list_m_thetas["thetas"]);
+  mat theta_var = Rcpp::as<mat>(list_m_thetas["var_thetas"]);
+  
+  // 1. Sample nu
+  
+  double m_nus_total = log(0.0); // -Inf
+  
+  int g;
+  for (g = 0; g < n_nu_grid; g++) {
+    m_nus_total = log_exp_x_plus_exp_y(m_nus_total,m_nus(g+1));
+  }    
+  
+  double u = runif(1)(0);
+  double cum_prob_curr = 0;
+  
+  for(g = 0; g < n_nu_grid && cum_prob_curr < u; g++  ) {
+    cum_prob_curr += exp(m_nus(g+1)-m_nus_total);
+  }
+  g--; // now g is the sample index for the nu
+  
+  
+  // 2. Sample thetas given nu
+  for(int j = 0; j < n_groups; j++) {
+    thetas_sample(j) = rnorm(1,theta_mean(j,g),sqrt(theta_var(j,g)))(0); 
+  }
+  // theta_sample_col(j) gives the sampled thetas for the jth group
+  
+
+  for (int j = 0; j < n_groups; j++) {
+    effect_size_sample(j) = log( thetas_sample(j)) - log(1.0 - thetas_sample(j) ) 
+                            - log( (sum(thetas_sample) - thetas_sample(j))/(n_groups - 1.0) )
+                            + log( 1.0 - (sum(thetas_sample) - thetas_sample(j))/(n_groups - 1.0) );
+  }
+  }
+  
+  return Rcpp::List::create(  
+    Rcpp::Named( "thetas_sample" ) = thetas_sample,
+    Rcpp::Named( "effect_size_sample" ) = effect_size_sample
+    );
+}
 
 void class_tree::save_index(  INDEX_TYPE& I, 
                               int level,                
@@ -1017,6 +1271,60 @@ void class_tree::save_index(  INDEX_TYPE& I,
   result_cubes.push_back(new_cube);  
 }
 
+void class_tree::save_index_sample(  INDEX_TYPE& I, 
+                              int level,                
+                              double alt_prob, 
+                              vec effect_size, 
+                              int direction,
+                              Col<unsigned int> data_indices,
+                              unsigned short node_index,
+                              int sample_id ) 
+{
+  unsigned short x_curr = 0;
+  unsigned short index_prev_var = 0;
+  unsigned short lower = 0;
+  unsigned short x_curr_count = -1;
+  cube_type new_cube;
+  vector<side_type> new_sides;
+  int i;  
+  for ( i = 0; i < level; i++) 
+  {
+    if ( I.var[i] - index_prev_var - 1 > 0 ) 
+    { // next variable
+      side_type new_side;
+      new_side.var = x_curr; 
+      new_side.extremes[0] = lower; 
+      new_side.extremes[1] =lower + ((unsigned int) 1 << (K-x_curr_count - 1)) - 1; 
+      new_sides.push_back(new_side);
+      lower = 0;
+      x_curr_count = 0;
+    }    
+    else 
+      x_curr_count++;
+    
+    x_curr += I.var[i] - index_prev_var - 1;
+    lower |= (((I.var[MAXVAR] >> i) & (unsigned int) 1)) << (K-x_curr_count - 1);  
+    index_prev_var = I.var[i];
+  }
+  
+  if (level > 0) 
+  {
+    side_type new_side;
+    new_side.var = x_curr; 
+    new_side.extremes[0] = lower; 
+    new_side.extremes[1] =lower + ((unsigned int) 1 << (K-x_curr_count - 1)) - 1; 
+    new_sides.push_back(new_side);
+  }
+  
+  new_cube.sides = new_sides;
+  new_cube.alt_prob = alt_prob;
+  new_cube.level = level;
+  new_cube.effect_size = effect_size;
+  new_cube.direction = direction;
+  new_cube.node_idx = node_index;
+  new_cube.data_points = data_indices;  
+  result_cubes_post_samples[sample_id].push_back(new_cube);  
+}
 
 
 
@@ -1081,8 +1389,6 @@ vector<int> class_tree::get_direction_nodes()
 	return v;
 }
 
-
-
 vector< vector<double> > class_tree::get_sides_nodes(vec a, vec b)
   {
   result_cubes_type::iterator it;
@@ -1114,6 +1420,104 @@ vector< vector<double> > class_tree::get_sides_nodes(vec a, vec b)
       actual_var ++;
     }
   // add final uncutted variables
+    v.push_back(w);
+  }
+  return v;
+}
+
+vector< vec > class_tree::get_effect_size_sample_nodes(int sample_id)
+{
+  result_cubes_type::iterator it;
+  vector< vec > v ;
+  for(it=result_cubes_post_samples[sample_id].begin(); it<result_cubes_post_samples[sample_id].end(); it++)
+  {
+    v.push_back(it->effect_size);
+  }
+  return v;
+}
+
+
+vector<int> class_tree::get_direction_sample_nodes(int sample_id)
+{
+  result_cubes_type::iterator it;
+  vector<int> v ;
+  for(it=result_cubes_post_samples[sample_id].begin(); it<result_cubes_post_samples[sample_id].end(); it++)
+  {
+    v.push_back(it->direction);
+  }
+  return v;
+}
+
+vector< Col< unsigned > > class_tree::get_data_points_sample_nodes(int sample_id)
+{
+  result_cubes_type::iterator it;
+  vector< Col< unsigned > > v ;
+  for(it=result_cubes_post_samples[sample_id].begin(); it<result_cubes_post_samples[sample_id].end(); it++)
+    v.push_back(it->data_points);
+  return v;
+}
+
+vector<unsigned short> class_tree::get_level_sample_nodes(int sample_id)
+{
+  result_cubes_type::iterator it;
+  vector<unsigned short> v ;
+  for(it=result_cubes_post_samples[sample_id].begin(); it<result_cubes_post_samples[sample_id].end(); it++)
+    v.push_back(it->level);
+  return v;
+}
+
+vector<unsigned short> class_tree::get_idx_sample_nodes(int sample_id)
+{
+  result_cubes_type::iterator it;
+  vector<unsigned short> v ;
+  for(it=result_cubes_post_samples[sample_id].begin(); it<result_cubes_post_samples[sample_id].end(); it++)
+    v.push_back(it->node_idx);
+  return v;
+}
+
+vector<double> class_tree::get_alt_prob_sample_nodes(int sample_id)
+{
+  result_cubes_type::iterator it;
+  vector<double> v ;
+  for(it=result_cubes_post_samples[sample_id].begin(); it<result_cubes_post_samples[sample_id].end(); it++)
+  {
+    v.push_back(it->alt_prob);
+  }
+  return v;
+}
+
+
+vector< vector<double> > class_tree::get_sides_sample_nodes(vec a, vec b, int sample_id)
+{
+  result_cubes_type::iterator it;
+  vector<side_type>::iterator km;
+  vector<vector<double> > v;
+  unsigned short actual_var = 0;
+  
+  for(it=result_cubes_post_samples[sample_id].begin(); it < result_cubes_post_samples[sample_id].end(); it++)
+  {
+    vector<double> w;
+    actual_var = 0;	
+    
+    for(km = it->sides.begin(); km < it->sides.end()  ; km++)
+    {
+      while(km->var > actual_var)
+      {      // add uncutted variables
+        w.push_back( -b(actual_var) / a(actual_var) );
+        w.push_back( (1.0 - b(actual_var)) / a(actual_var) );
+        actual_var ++;
+      }			       
+      w.push_back( ( km->extremes[0]/((double)pow2(K)) - b(actual_var))/(a(actual_var)) );
+      w.push_back( ( (1.0+km->extremes[1])/((double)pow2(K)) - b(actual_var))/(a(actual_var)) );	
+      actual_var++;	
+    }
+    while( actual_var < p )
+    {
+      w.push_back( -b(actual_var) / a(actual_var) );
+      w.push_back( (1.0 - b(actual_var)) / a(actual_var) );
+      actual_var ++;
+    }
+    // add final uncutted variables
     v.push_back(w);
   }
   return v;
@@ -1343,6 +1747,7 @@ int * class_tree::get_child_map(INDEX_TYPE& I, int i, int level, unsigned short 
     INDEX_TYPE child_index = make_child_index(I,i,level,which);
     return &map[level+1][(get_node_index(child_index,level+1, 3*n_states))];
 }
+
 
 void class_tree::clear() 
 {
