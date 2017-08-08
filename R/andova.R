@@ -61,7 +61,8 @@ andova <- function(  X,
                          nu_vec = 10^(seq(-1,4)),
                          return_global_null = TRUE,
                          return_tree = TRUE,
-                         n_post_samples = 0)
+                         n_post_samples = 0,
+                         baseline = 0)
 {
   X = as.matrix(X)
   if(Omega[1] == "default")
@@ -131,6 +132,11 @@ andova <- function(  X,
     return(0);
   }
   
+  if( baseline < 0 | baseline > n_groups )
+  {
+    print("ERROR: 0 <= baseline <= n_groups")
+    return(0);
+  }
   ans = fitMRSNESTEDcpp( X, 
                          G, 
                          H,
@@ -147,7 +153,8 @@ andova <- function(  X,
                          eta, 
                          return_global_null, 
                          return_tree,
-                         n_post_samples)
+                         n_post_samples,
+                         baseline)
   
   if (return_tree) {
     ans$RepresentativeTree$EffectSizes = matrix( unlist(ans$RepresentativeTree$EffectSizes), 

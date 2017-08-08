@@ -21,9 +21,10 @@ Rcpp::List fitMRScpp( arma::mat X,
                       double eta = 0.3,
                       bool return_global_null = true,
                       bool return_tree = true,
-                      int min_n_node = 0,
-                      int n_post_samples = 0
-                  )
+                      int n_post_samples = 0,
+                      int baseline = 0,
+                      int min_n_node = 0
+                 )
 {
 
   /* **************************************** */
@@ -71,8 +72,9 @@ Rcpp::List fitMRScpp( arma::mat X,
                       return_global_null, 
                       return_tree,
                       n_post_samples,
+                      baseline,
                       min_n_node
-                      );
+                     );
   my_tree.update();
   
   double loglike = my_tree.get_marginal_loglikelihood();
@@ -214,7 +216,8 @@ Rcpp::List fitMRSNESTEDcpp( arma::mat X,
                             double eta = 0,
                             bool return_global_null = true,
                             bool return_tree = true,
-                            int n_post_samples = 0
+                            int n_post_samples = 0,
+                            int baseline = 0
                           )
 {
 
@@ -256,7 +259,8 @@ Rcpp::List fitMRSNESTEDcpp( arma::mat X,
                       eta, 
                       return_global_null, 
                       return_tree,
-                      n_post_samples);
+                      n_post_samples,
+                      baseline);
   my_tree.update();
   
   double loglike = my_tree.get_marginal_loglikelihood();
