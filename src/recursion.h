@@ -24,6 +24,7 @@ class class_tree
   double beta, gamma, delta, eta;  // parameters of the transition probability matrix
   bool return_global_null, return_tree;
   int min_n_node;   // Node in the tree is returned if there are more than min_n_node data-points in it.
+  int baseline; // Baseline group for computing effect sizes. If 0 then no baseline and use leave-one-out odds ratio
   //constructor
   int n_post_samples; // number of posterior samples of the effect size to draw
   class_tree( Mat<unsigned int> X, 
@@ -42,7 +43,8 @@ class class_tree
               bool return_global_null = true,
               bool return_tree = true,
               int n_post_samples = 0, 
-              int min_n_node = 0
+              int min_n_node = 0,
+              int baseline = 0
            );
             
   // compute posterior recursively          

@@ -22,6 +22,7 @@ class_tree::class_tree( Mat<unsigned int> X,
                         bool return_global_null,
                         bool return_tree,
                         int n_post_samples,
+                        int baseline,
                         int min_n_node
                         ):
                         X(X),
@@ -40,6 +41,7 @@ class_tree::class_tree( Mat<unsigned int> X,
                         return_global_null(return_global_null),
                         return_tree(return_tree),
                         n_post_samples(n_post_samples),
+                        baseline(baseline),
                         min_n_node(min_n_node)
 {
   n_tot = X.n_rows;
@@ -1067,11 +1069,20 @@ Rcpp::List class_tree::mrs_effect_size(INDEX_TYPE& I, int level, int top_directi
     theta.col(j) = temp;
   }
         
-  for(int j = 0; j < n_groups; j++)
-    effect_size(j) = mean(log(theta.col(j)) - log(1.0 - theta.col(j)) 
-      - log( (sum(theta,1) - theta.col(j) )/(n_groups - 1.0)  )
-      + log( 1.0 - (sum(theta,1) - theta.col(j) )/(n_groups - 1.0)  ) ); 
-
+  for(int j = 0; j < n_groups; j++) {
+    if (baseline > 0 && baseline < n_groups+1) {
+      effect_size(j) = mean(log(theta.col(j)) - log(1.0 - theta.col(j)) 
+                              - log( theta.col(baseline-1))
+                              + log( 1.0 - theta.col(baseline-1)  ) ); 
+    }
+    else {
+      effect_size(j) = mean(log(theta.col(j)) - log(1.0 - theta.col(j)) 
+        - log( (sum(theta,1) - theta.col(j) )/(n_groups - 1.0)  )
+        + log( 1.0 - (sum(theta,1) - theta.col(j) )/(n_groups - 1.0)  ) ); 
+    }
+ 
+  }
+  
   double den = log(0.0);
   for(int s = 0; s < n_states; s++)
     den = log_exp_x_plus_exp_y(den, VARPHI_CURR[s]);
@@ -1105,14 +1116,24 @@ Rcpp::List class_tree::anova_effect_size(INDEX_TYPE& I, int level, int top_direc
     }
   }    
   
-  for (int i = 0; i < n_nu_grid; i++) {
-    for (int j = 0; j < n_groups; j++) {
-      effect_size(j) += nus(i) * (log(thetas(j, i)) - log(1.0 - thetas(j, i)) 
-        - log((sum(thetas.col(i)) - thetas(j, i))/(n_groups - 1.0))
-        + log(1.0 - (sum(thetas.col(i)) - thetas(j, i))/(n_groups - 1.0)));
+  if (baseline > 0 && baseline < n_groups+1){
+    for (int i = 0; i < n_nu_grid; i++) {
+      for (int j = 0; j < n_groups; j++) {
+        effect_size(j) += nus(i) * (log(thetas(j, i)) - log(1.0 - thetas(j, i)) 
+                                      - log(thetas(baseline-1,i))
+                                      + log(1.0 - thetas(baseline-1,i)));
+      }
     }
   }
-  
+  else {
+    for (int i = 0; i < n_nu_grid; i++) {
+      for (int j = 0; j < n_groups; j++) {
+        effect_size(j) += nus(i) * (log(thetas(j, i)) - log(1.0 - thetas(j, i)) 
+          - log((sum(thetas.col(i)) - thetas(j, i))/(n_groups - 1.0))
+          + log(1.0 - (sum(thetas.col(i)) - thetas(j, i))/(n_groups - 1.0)));
+      }
+    }
+  }
   double den = log(0.0);
   for(int s = 0; s < n_states; s++)
     den = log_exp_x_plus_exp_y(den, VARPHI_CURR[s]);
@@ -1152,11 +1173,18 @@ Rcpp::List class_tree::mrs_sample_effect_size(INDEX_TYPE& I, int level, int dire
       thetas_sample(j) = rbeta(1, (double)n_0 + alpha, (double)n_1 + alpha )(0);
     }
     
-    for(int j = 0; j < n_groups; j++)
-      effect_size_sample(j) = log(thetas_sample(j)) - log(1.0 - thetas_sample(j)) 
-                              - log( (sum(thetas_sample) - thetas_sample(j) )/(n_groups - 1.0)  )
-                              + log( 1.0 - (sum(thetas_sample) - thetas_sample(j) )/(n_groups - 1.0)  ); 
-                              
+    if (baseline > 0 && baseline < n_groups+1) {
+      for(int j = 0; j < n_groups; j++)
+        effect_size_sample(j) = log(thetas_sample(j)) - log(1.0 - thetas_sample(j)) 
+        - log( thetas_sample(baseline-1) )
+        + log( 1.0 - thetas_sample(baseline-1)  ); 
+    }
+    else {
+      for(int j = 0; j < n_groups; j++)
+        effect_size_sample(j) = log(thetas_sample(j)) - log(1.0 - thetas_sample(j)) 
+                                - log( (sum(thetas_sample) - thetas_sample(j) )/(n_groups - 1.0)  )
+                                + log( 1.0 - (sum(thetas_sample) - thetas_sample(j) )/(n_groups - 1.0)  ); 
+    }                           
   }
   
   return Rcpp::List::create(  
@@ -1203,11 +1231,20 @@ Rcpp::List class_tree::anova_sample_effect_size(INDEX_TYPE& I, int level, int di
   }
   // theta_sample_col(j) gives the sampled thetas for the jth group
   
-
-  for (int j = 0; j < n_groups; j++) {
-    effect_size_sample(j) = log( thetas_sample(j)) - log(1.0 - thetas_sample(j) ) 
-                            - log( (sum(thetas_sample) - thetas_sample(j))/(n_groups - 1.0) )
-                            + log( 1.0 - (sum(thetas_sample) - thetas_sample(j))/(n_groups - 1.0) );
+  if (baseline > 0 && baseline < n_groups+1) {
+    for (int j = 0; j < n_groups; j++) {
+      effect_size_sample(j) = log( thetas_sample(j)) - log(1.0 - thetas_sample(j) ) 
+      - log( thetas_sample(baseline-1) )
+      + log( 1.0 - thetas_sample(baseline-1));
+    }
+  }
+  else {
+    
+    for (int j = 0; j < n_groups; j++) {
+      effect_size_sample(j) = log( thetas_sample(j)) - log(1.0 - thetas_sample(j) ) 
+                              - log( (sum(thetas_sample) - thetas_sample(j))/(n_groups - 1.0) )
+                              + log( 1.0 - (sum(thetas_sample) - thetas_sample(j))/(n_groups - 1.0) );
+    }
   }
   }
   
