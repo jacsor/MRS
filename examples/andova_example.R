@@ -50,7 +50,12 @@ plot1D(ans_mrs, type = "eff", legend = T, group = 1)
 plot1D(ans_mrs, type = "eff", legend = T, group = 2)
 plot1D(ans_mrs, legend = T)
 
-## Draw and plot posterior samples of effect sizes
+# Use Group 1 as baseline for computing effect sizes
+ans_mrs2 = andova(X,G,H, K=6,baseline=1)
+plot1D(ans_mrs2, type = "eff", legend = T, group = 1)
+plot1D(ans_mrs2, type = "eff", legend = T, group = 2)
+
+## Draw and plot posterior samples of effect sizes and the states
 n_post_samples = 100
 ans_mrs = andova(X,G,H, K=6,n_post_samples = n_post_samples)
 for (sample_id in 1:n_post_samples) {
