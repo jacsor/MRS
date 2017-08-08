@@ -60,7 +60,8 @@ andova <- function(  X,
                          alpha = 0.5,
                          nu_vec = 10^(seq(-1,4)),
                          return_global_null = TRUE,
-                         return_tree = TRUE )
+                         return_tree = TRUE,
+                         n_post_samples = 0)
 {
   X = as.matrix(X)
   if(Omega[1] == "default")
@@ -145,7 +146,8 @@ andova <- function(  X,
                          delta,
                          eta, 
                          return_global_null, 
-                         return_tree )
+                         return_tree,
+                         n_post_samples)
   
   if (return_tree) {
     ans$RepresentativeTree$EffectSizes = matrix( unlist(ans$RepresentativeTree$EffectSizes), 
@@ -154,6 +156,15 @@ andova <- function(  X,
                                              nrow = length(ans$RepresentativeTree$Levels), byrow = TRUE)
   }
 
+  
+  if (n_post_samples > 0) {
+    for (i in 1:n_post_samples) {
+      ans$PostSamples[[i]]$EffectSizes = matrix( unlist(ans$PostSamples[[i]]$EffectSizes), 
+                                                 nrow = length(ans$PostSamples[[i]]$Levels), byrow = TRUE)
+      ans$PostSamples[[i]]$Regions = matrix( unlist(ans$PostSamples[[i]]$Regions), 
+                                             nrow = length(ans$PostSamples[[i]]$Levels), byrow = TRUE)
+    }
+  }
   
   colnames(ans$Data$X) = colnames(X)
   
