@@ -62,7 +62,9 @@ andova <- function(  X,
                          return_global_null = TRUE,
                          return_tree = TRUE,
                          n_post_samples = 0,
-                         baseline = 0)
+                         baseline = 0,
+                         method = "newton",
+                         n_grid_theta = 50)
 {
   X = as.matrix(X)
   if(Omega[1] == "default")
@@ -137,6 +139,20 @@ andova <- function(  X,
     print("ERROR: 0 <= baseline <= n_groups")
     return(0);
   }
+  
+
+  if (method == "newton") method = 0
+  else if (method == "riemann") method = 1
+  else {
+    print("ERROR: Integration method must be newton or riemann")
+    return(0);
+  }
+  
+  if (n_grid_theta < 1) {
+    print("ERROR: n_grid_theta < 1")
+    return(0);
+  }
+  
   ans = fitMRSNESTEDcpp( X, 
                          G, 
                          H,
@@ -154,7 +170,9 @@ andova <- function(  X,
                          return_global_null, 
                          return_tree,
                          n_post_samples,
-                         baseline)
+                         baseline,
+                         method,
+                         n_grid_theta )
   
   if (return_tree) {
     ans$RepresentativeTree$EffectSizes = matrix( unlist(ans$RepresentativeTree$EffectSizes), 
