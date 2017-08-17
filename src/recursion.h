@@ -10,21 +10,23 @@ class class_tree
   public:
   Mat<unsigned int> X; // the data
   arma::vec G; // the group labels of each observation
-  arma::vec H; // the sub-group labels of each observation (used for dANOVA)
+  arma::vec H; // the sub-group labels of each observation (used for ANDOVA)
   int n_tot; // total number of observations
   int p;    // dimension of the sample space
   int n_states; // number of hidden states
   vec init_state; // initial state of the hidden process
   int n_groups;  // number of groups
-  Col<int> n_subgroups; // number of subgrous within each group (used for dANOVA)
-  Col<int> cum_subgroups; // cumulative sum of n_subgroups; (used for dANOVA)
-  arma::vec nu_vec;  // discrete prior on the parameter nu
+  Col<int> n_subgroups; // number of subgrous within each group (used for ANDOVA)
+  Col<int> cum_subgroups; // cumulative sum of n_subgroups; (used for ANDOVA)
+  arma::vec nu_vec;  // discrete prior on the parameter nu (used for ANDOVA)
   int K;    // maximum depth of the tree
   double alpha;   // pseudo-counts
   double beta, gamma, delta, eta;  // parameters of the transition probability matrix
   bool return_global_null, return_tree;
   int min_n_node;   // Node in the tree is returned if there are more than min_n_node data-points in it.
   int baseline; // Baseline group for computing effect sizes. If 0 then no baseline and use leave-one-out odds ratio
+  int method; // Method of integration for theta. 0 --> Newton-Raphson; 1 --> Riemann quadrature
+  arma::vec theta_vec; // the grid of theta values used in Riemann quadrature (used for ANDOVA)
   //constructor
   int n_post_samples; // number of posterior samples of the effect size to draw
   class_tree( Mat<unsigned int> X, 
@@ -43,8 +45,10 @@ class class_tree
               bool return_global_null = true,
               bool return_tree = true,
               int n_post_samples = 0, 
+              int baseline = 0,
               int min_n_node = 0,
-              int baseline = 0
+              int method = 0,
+              int n_grid_theta = 50
            );
             
   // compute posterior recursively          

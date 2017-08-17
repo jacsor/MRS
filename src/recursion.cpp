@@ -23,7 +23,9 @@ class_tree::class_tree( Mat<unsigned int> X,
                         bool return_tree,
                         int n_post_samples,
                         int baseline,
-                        int min_n_node
+                        int min_n_node,
+                        int method,
+                        int n_grid_theta
                         ):
                         X(X),
                         G(G),
@@ -42,7 +44,8 @@ class_tree::class_tree( Mat<unsigned int> X,
                         return_tree(return_tree),
                         n_post_samples(n_post_samples),
                         baseline(baseline),
-                        min_n_node(min_n_node)
+                        min_n_node(min_n_node),
+                        method(method)
 {
   n_tot = X.n_rows;
   p = X.n_cols;
@@ -53,6 +56,10 @@ class_tree::class_tree( Mat<unsigned int> X,
   
   result_cubes_post_samples.reserve(n_post_samples);
   
+  theta_vec.zeros(n_grid_theta);
+  for (int i = 0; i < n_grid_theta; i++) {
+    theta_vec(i) = (i+1.0)/(n_grid_theta+1);
+  }
   init();
 }
 
@@ -649,10 +656,10 @@ Rcpp::List class_tree::compute_m_anova(INDEX_TYPE& I, int level, int d)
   vec m_nus(n_grid + 1); m_nus.fill(log(0.0));
   mat thetas(n_groups, n_grid); thetas.fill(0.5);
   mat var_thetas(n_groups,n_grid); var_thetas.fill(0);
-  int n_grid_theta = 4;
-  vec theta0(n_grid_theta);
-  theta0 << 0.125 << 0.375 << 0.625 << 0.875 ;
-
+  int n_grid_theta = theta_vec.n_elem;
+  //vec theta0(n_grid_theta);
+  //theta0 << 0.125 << 0.375 << 0.625 << 0.875 
+  
   vec data_0( sum(n_subgroups) ); 
   vec data_1( sum(n_subgroups) );
   for(int i = 0; i < sum(n_subgroups); i++)
@@ -668,28 +675,42 @@ Rcpp::List class_tree::compute_m_anova(INDEX_TYPE& I, int level, int d)
     {
       for(int h = 0; h < n_grid_theta; h++)
         m_nus(0) = log_exp_x_plus_exp_y( m_nus(0), 
-          eval_h(theta0(h), data_0, data_1, nu_vec(g), alpha ) - log(n_grid) - log(n_grid_theta) ); 
+          eval_h(theta_vec(h), data_0, data_1, nu_vec(g), alpha ) - log(n_grid) - log(n_grid_theta) ); 
     }
   }
   else
   {
     for(int g = 0; g < n_grid; g++)
     {
-      vec tt = newtonMethod(data_0, data_1, nu_vec(g), alpha);
-      if(std::isnan(tt(1)))
-      {
+      if (method == 0) { // Use Newton-Raphson for integrating on theta
+        vec tt = newtonMethod(data_0, data_1, nu_vec(g), alpha);
+        if(std::isnan(tt(1))) // If NR failed use Riemann quadrature
+        {
+          for(int h = 0; h < n_grid_theta; h++)
+            m_nus(0) = log_exp_x_plus_exp_y( m_nus(0), 
+              eval_h(theta_vec(h), data_0, data_1, nu_vec(g), alpha ) - log(n_grid) - log(n_grid_theta) ); 
+        }
+        else // If NR succeeded
+          m_nus(0) = log_exp_x_plus_exp_y( m_nus(0), tt(1)  - log(n_grid) );
+      }
+      
+      else { // method == 1, Use Riemann quadrature anyway
         for(int h = 0; h < n_grid_theta; h++)
           m_nus(0) = log_exp_x_plus_exp_y( m_nus(0), 
-            eval_h(theta0(h), data_0, data_1, nu_vec(g), alpha ) - log(n_grid) - log(n_grid_theta) ); 
+                eval_h(theta_vec(h), data_0, data_1, nu_vec(g), alpha ) - log(n_grid) - log(n_grid_theta) ); 
       }
-      else
-        m_nus(0) = log_exp_x_plus_exp_y( m_nus(0), tt(1)  - log(n_grid) );    
+      
     }
       
     
   }
   //under the alternative
+  bool NR_ind = FALSE;
+  
   mat temp_mat(n_groups, n_grid); temp_mat.fill(log(0.0));
+  mat temp_mat2(n_groups, n_grid); temp_mat2.fill(log(0.0));
+  mat temp_mat3(n_groups, n_grid); temp_mat3.fill(log(0.0));
+  
   for(int j = 0; j < n_groups; j++)
   {
     vec temp_data_0 = data_0.subvec( cum_subgroups(j), cum_subgroups(j+1) - 1  );
@@ -705,38 +726,71 @@ Rcpp::List class_tree::compute_m_anova(INDEX_TYPE& I, int level, int d)
       {
         for(int h = 0; h < n_grid_theta; h++)
           temp_mat(j,g) = log_exp_x_plus_exp_y( temp_mat(j,g), 
-            eval_h(theta0(h), temp_data_0, temp_data_1, nu_vec(g), alpha ) - log(n_grid_theta) ); 
+            eval_h(theta_vec(h), temp_data_0, temp_data_1, nu_vec(g), alpha ) - log(n_grid_theta) ); 
       }
     }
     else
     {
       for(int g = 0; g < n_grid; g++)
       {
-        vec tt = newtonMethod(temp_data_0, temp_data_1, nu_vec(g), alpha);       
-        if(std::isnan(tt(1)))
-        {
-          for(int h = 0; h < n_grid_theta; h++)
-            temp_mat(j,g) = log_exp_x_plus_exp_y( temp_mat(j,g), 
-              eval_h(theta0(h), temp_data_0, temp_data_1, nu_vec(g), alpha ) - log(n_grid_theta) );      
+        if (method == 0) { // Use Newton-Raphson for integrating on theta
+          
+          vec tt = newtonMethod(temp_data_0, temp_data_1, nu_vec(g), alpha);       
+          if(std::isnan(tt(1)))
+          {
+            for(int h = 0; h < n_grid_theta; h++)
+              temp_mat(j,g) = log_exp_x_plus_exp_y( temp_mat(j,g), 
+                eval_h(theta_vec(h), temp_data_0, temp_data_1, nu_vec(g), alpha ) - log(n_grid_theta) );      
+          }
+          else { // If NR succeeded
+            NR_ind =TRUE;
+            temp_mat(j,g) = tt(1);
+            thetas(j,g) = tt(0); // the approximate posterior Gaussian mean for theta
+            var_thetas(j,g) = tt(2); // the approximate posterior Gaussian variance for theta
+          }
         }
-        else {
-          temp_mat(j,g) = tt(1);
-          thetas(j,g) = tt(0);
-          var_thetas(j,g) = tt(2); // the approximate posterior Gaussian variance for theta
+        else { // method == 1, Use Riemann quadrature anyway
+            double h_x;
+          
+            for(int h = 0; h < n_grid_theta; h++) {
+              h_x = eval_h(theta_vec(h), temp_data_0, temp_data_1, nu_vec(g), alpha ) - log(n_grid_theta);
+              temp_mat(j,g) = log_exp_x_plus_exp_y( temp_mat(j,g), h_x);
+              temp_mat2(j,g) = log_exp_x_plus_exp_y( temp_mat2(j,g), log(theta_vec(h)) + h_x);
+              temp_mat3(j,g) = log_exp_x_plus_exp_y( temp_mat2(j,g), 2*log(theta_vec(h)) + h_x);
+            }
+            thetas(j,g) = exp(temp_mat2(j,g)-temp_mat(j,g)); // Posterior mean of theta
+            var_thetas(j,g) = exp(temp_mat3(j,g)-temp_mat(j,g)) - thetas(j,g)*thetas(j,g); // Posterior variance of theta
         }
       }
-         
-      
     }
   }
   for(int g = 0; g < n_grid; g++)
     m_nus(g + 1) = sum(temp_mat.col(g)) - log(n_grid);
-    
+  
+//  if (NR_ind) { // if Newton-Raphson is chosen and ran successfully
   return Rcpp::List::create(  
-  Rcpp::Named( "m_nus" ) = m_nus,
-  Rcpp::Named( "thetas" ) = thetas,  
-  Rcpp::Named( "var_thetas" ) = var_thetas
+    Rcpp::Named( "m_nus" ) = m_nus,
+    Rcpp::Named( "thetas" ) = thetas,  
+    Rcpp::Named( "var_thetas" ) = var_thetas
   );
+//  }
+  /*
+  else {
+    
+    for (int g = 0; g < n_grid; g++) {
+      double temp = sum(temp_mat.col(g));
+      
+      for (int h = 0; h < n_grid_theta; h++) {
+        temp_mat()
+      }
+    }
+    
+    return Rcpp::List::create(  
+      Rcpp::Named( "m_nus" ) = m_nus,
+      Rcpp::Named( "post_thetas" ) = temp_
+    );
+  }
+  */
 }
 
 
