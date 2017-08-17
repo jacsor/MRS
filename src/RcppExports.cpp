@@ -8,7 +8,7 @@ using namespace Rcpp;
 
 // fitMRScpp
 Rcpp::List fitMRScpp(arma::mat X, arma::vec G, int n_groups, arma::vec init_state, arma::mat Omega, int K, double alpha, double beta, double gamma, double delta, double eta, bool return_global_null, bool return_tree, int n_post_samples, int baseline, int min_n_node);
-RcppExport SEXP _MRS_fitMRScpp(SEXP XSEXP, SEXP GSEXP, SEXP n_groupsSEXP, SEXP init_stateSEXP, SEXP OmegaSEXP, SEXP KSEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP gammaSEXP, SEXP deltaSEXP, SEXP etaSEXP, SEXP return_global_nullSEXP, SEXP return_treeSEXP, SEXP n_post_samplesSEXP, SEXP baselineSEXP, SEXP min_n_nodeSEXP) {
+RcppExport SEXP MRS_fitMRScpp(SEXP XSEXP, SEXP GSEXP, SEXP n_groupsSEXP, SEXP init_stateSEXP, SEXP OmegaSEXP, SEXP KSEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP gammaSEXP, SEXP deltaSEXP, SEXP etaSEXP, SEXP return_global_nullSEXP, SEXP return_treeSEXP, SEXP n_post_samplesSEXP, SEXP baselineSEXP, SEXP min_n_nodeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -33,8 +33,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // fitMRSNESTEDcpp
-Rcpp::List fitMRSNESTEDcpp(arma::mat X, arma::vec G, arma::vec H, int n_groups, arma::Col<int> n_subgroups, arma::vec init_state, arma::mat Omega, arma::vec nu_vec, int K, double alpha, double beta, double gamma, double delta, double eta, bool return_global_null, bool return_tree, int n_post_samples, int baseline);
-RcppExport SEXP _MRS_fitMRSNESTEDcpp(SEXP XSEXP, SEXP GSEXP, SEXP HSEXP, SEXP n_groupsSEXP, SEXP n_subgroupsSEXP, SEXP init_stateSEXP, SEXP OmegaSEXP, SEXP nu_vecSEXP, SEXP KSEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP gammaSEXP, SEXP deltaSEXP, SEXP etaSEXP, SEXP return_global_nullSEXP, SEXP return_treeSEXP, SEXP n_post_samplesSEXP, SEXP baselineSEXP) {
+Rcpp::List fitMRSNESTEDcpp(arma::mat X, arma::vec G, arma::vec H, int n_groups, arma::Col<int> n_subgroups, arma::vec init_state, arma::mat Omega, arma::vec nu_vec, int K, double alpha, double beta, double gamma, double delta, double eta, bool return_global_null, bool return_tree, int n_post_samples, int baseline, int method, int n_grid_theta);
+RcppExport SEXP MRS_fitMRSNESTEDcpp(SEXP XSEXP, SEXP GSEXP, SEXP HSEXP, SEXP n_groupsSEXP, SEXP n_subgroupsSEXP, SEXP init_stateSEXP, SEXP OmegaSEXP, SEXP nu_vecSEXP, SEXP KSEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP gammaSEXP, SEXP deltaSEXP, SEXP etaSEXP, SEXP return_global_nullSEXP, SEXP return_treeSEXP, SEXP n_post_samplesSEXP, SEXP baselineSEXP, SEXP methodSEXP, SEXP n_grid_thetaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -56,18 +56,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type return_tree(return_treeSEXP);
     Rcpp::traits::input_parameter< int >::type n_post_samples(n_post_samplesSEXP);
     Rcpp::traits::input_parameter< int >::type baseline(baselineSEXP);
-    rcpp_result_gen = Rcpp::wrap(fitMRSNESTEDcpp(X, G, H, n_groups, n_subgroups, init_state, Omega, nu_vec, K, alpha, beta, gamma, delta, eta, return_global_null, return_tree, n_post_samples, baseline));
+    Rcpp::traits::input_parameter< int >::type method(methodSEXP);
+    Rcpp::traits::input_parameter< int >::type n_grid_theta(n_grid_thetaSEXP);
+    rcpp_result_gen = Rcpp::wrap(fitMRSNESTEDcpp(X, G, H, n_groups, n_subgroups, init_state, Omega, nu_vec, K, alpha, beta, gamma, delta, eta, return_global_null, return_tree, n_post_samples, baseline, method, n_grid_theta));
     return rcpp_result_gen;
 END_RCPP
-}
-
-static const R_CallMethodDef CallEntries[] = {
-    {"_MRS_fitMRScpp", (DL_FUNC) &_MRS_fitMRScpp, 16},
-    {"_MRS_fitMRSNESTEDcpp", (DL_FUNC) &_MRS_fitMRSNESTEDcpp, 18},
-    {NULL, NULL, 0}
-};
-
-RcppExport void R_init_MRS(DllInfo *dll) {
-    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
-    R_useDynamicSymbols(dll, FALSE);
 }
