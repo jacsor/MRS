@@ -13,7 +13,7 @@ The package can be installed on Linux and Mac using `devtools`:
 ```S
 install.packages('devtools')
 library('devtools')
-devtools::install_github('MRS', 'jacsor')
+devtools::install_github('MRS', 'MaStatLab')
 ```
 
 ### Use
