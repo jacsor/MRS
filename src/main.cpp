@@ -73,7 +73,9 @@ Rcpp::List fitMRScpp( arma::mat X,
                       return_tree,
                       n_post_samples,
                       baseline,
-                      min_n_node
+                      min_n_node,
+                      0,  // Method is not used for MRS, use 0 as place holder
+                      1   // n_grid_theta is not used for MRS, use 1 as place holder
                      );
   my_tree.update();
   
@@ -217,7 +219,9 @@ Rcpp::List fitMRSNESTEDcpp( arma::mat X,
                             bool return_global_null = true,
                             bool return_tree = true,
                             int n_post_samples = 0,
-                            int baseline = 0
+                            int baseline = 0,
+                            int method = 0,  // method of integration over theta (0 is Newton-Raphson, 1 is Riemann quadrature)
+                            int n_grid_theta = 4 // the number of theta values used in the Riemann quadrature either when Riemann quadrature is chosen or when NR has failed.
                           )
 {
 
@@ -260,7 +264,10 @@ Rcpp::List fitMRSNESTEDcpp( arma::mat X,
                       return_global_null, 
                       return_tree,
                       n_post_samples,
-                      baseline);
+                      baseline,
+                      0, // n_min_node is not used for ANDOVA so use 0 as place holder in the constructor
+                      method, 
+                      n_grid_theta); 
   my_tree.update();
   
   double loglike = my_tree.get_marginal_loglikelihood();
