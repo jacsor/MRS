@@ -82,5 +82,6 @@ double eval_h( double theta0,
                 double alpha );
 
 
+void print_index(INDEX_TYPE & I, int level);
 
 #endif
