@@ -45,9 +45,9 @@ for(i in 1:n_obs)
 
 
 library(MRS)
-ans_mrs = andova(X,G,H, K=6)
-plot1D(ans_mrs, type = "eff", legend = T, group = 1)
-plot1D(ans_mrs, type = "eff", legend = T, group = 2)
+ans_mrs = andova(X,G,H, K=10,method="newton",nu_vec = 10^seq(-1,4,length=10))
+plot1D(ans_mrs, abs=FALSE, type = "eff", legend = T, group = 1)
+plot1D(ans_mrs, abs=FALSE, type = "eff", legend = T, group = 2)
 plot1D(ans_mrs, legend = T)
 
 # Use Group 1 as baseline for computing effect sizes
@@ -55,17 +55,26 @@ ans_mrs2 = andova(X,G,H, K=6,baseline=1)
 plot1D(ans_mrs2, type = "eff", legend = T, group = 1)
 plot1D(ans_mrs2, type = "eff", legend = T, group = 2)
 
+# Instead of Newton-Raphson, let's use numerical quadrature
+# Use Group 1 as baseline for computing effect sizes
+ans_mrs3 = andova(X,G,H, K=10,method="riemann",n_grid_theta=50,nu_vec = 10^seq(-1,4,length=10))
+plot1D(ans_mrs3, legend = T)
+plot1D(ans_mrs3, abs=FALSE,type = "eff", legend = T, group = 1)
+plot1D(ans_mrs3, abs=FALSE,type = "eff", legend = T, group = 2)
+ans_mrs$PostGlobNull
+ans_mrs3$PostGlobNull
+
+
 ## Draw and plot posterior samples of effect sizes and the states
 n_post_samples = 100
-ans_mrs = andova(X,G,H, K=6,n_post_samples = n_post_samples)
+ans_mrs = andova(X,G,H, K=10,n_post_samples = n_post_samples,nu_vec = 10^seq(-1,4,length=10))
 for (sample_id in 1:n_post_samples) {
 
   ans_mrs$RepresentativeTree = ans_mrs$PostSamples[[sample_id]]
   ans_mrs$RepresentativeTree$EffectSizes[is.nan(ans_mrs$RepresentativeTree$EffectSizes)]=0
-  plot1D(ans_mrs, type = "eff", legend = T, group = 1, main =paste("Sample",sample_id))
+  plot1D(ans_mrs, abs=FALSE, type = "eff", legend = T, group = 1, main =paste("Sample",sample_id))
   # plot1D(ans_mrs, legend = T, group = 1, main =paste("Sample",sample_id))
   
-
 }
 
 
