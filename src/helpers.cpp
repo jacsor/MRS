@@ -335,5 +335,17 @@ double eval_h(double theta0, arma::vec data_0, arma::vec data_1, double nu, doub
   return y;
 }
 
+void print_index(INDEX_TYPE & I, int level) {
+  ushort x_curr = 0;
+  ushort index_prev_var = 0;
+  
+  for (int i = 0; i < level; i++) {
+    x_curr += I.var[i] - index_prev_var - 1;
+    cout << "X" << x_curr << "=" << ((I.var[MAXVAR] >> i) & (ushort) 1) << ",";
+    index_prev_var = I.var[i];
+  }
+  cout << I.var[MAXVAR];
+}
+
 
 
