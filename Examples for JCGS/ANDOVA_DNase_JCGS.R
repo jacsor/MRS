@@ -60,9 +60,10 @@ hist_Medullo_D341 + geom_histogram(bins=1024,size=3) + ylim(0,22) +
   geom_vline(xintercept = 100808876, color="red",linetype="dashed") + theme(plot.margin=unit(c(0,1,0,0),"cm"))
 
 
+
+
 ### Carry out the cross-group comparison
 
-  
 subset = (G=="Medullo_D721" | G=="Medullo_D341" | G=="K562")
 G = G[subset]
 X = X[subset]
@@ -79,6 +80,7 @@ nu.vec = 10^seq(-1,4,length=10)
 K=11
 system.time({ans_andova = andova(X,G,H,K=K,nu=nu.vec,delta=0.4,gamma=0.07,beta=1,Omega = Omega)})
 ans_andova$PostGlobNull
+
 
 ## Figure 6(a) in Ma and Soriano (2017)
 # pdf(file="k562vsMedullo721vsMedullo341_VGF_ANDOVA_long.pdf",width=6)
