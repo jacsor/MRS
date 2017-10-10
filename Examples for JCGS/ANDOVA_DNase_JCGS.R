@@ -1,6 +1,5 @@
 library(MRS)
 
-setwd("~/Dropbox/work/dANOVA/DNase/data")
 file = "dnase_chr7_100807500_100809500_ENCODE_6_cells_tagcounts.csv"
 begin = 100807500
 end = 100809500
@@ -11,6 +10,8 @@ colnames(reads.mat) = c("SampleID",1:(ncol(reads.mat)-1))
 X = NULL
 G = NULL
 H = NULL
+
+reads.new.all.long = data.frame(NULL)
 
 ## Figure 5 in Ma and Soriano (2017)
 # pdf("k562vsMedullo721&341_VGF_long_count_histograms.pdf",width=7,height=7)
@@ -23,17 +24,12 @@ for (ID in reads.mat[,"SampleID"]) {
   
   reads.original = reads.mat[reads.mat$SampleID == ID,-1]
   reads.new = rep(1:length(reads.original),reads.original)
-
+  
+  
   if (length(grep("Medullo",GroupID))>0 | length(grep("K562",GroupID)>0))  {
     if (GroupID == "Medullo") GroupID = "Medullo_D721"
-    hist(x=reads.new+begin-1,breaks=1024,main=paste(GroupID,"Rep",RepID),xlim=c(begin,end),xlab="Genomic location",ylab="Counts")
-    abline(v=100808844,col="red",lty="dashed")
-    abline(v=100808876,col="red",lty="dashed")
-    if(length(grep("Medullo",GroupID)) > 0 && RepID==2) {
-       plot(reads.new,reads.new,type="n",axes=FALSE,xlab="",ylab="")
-    }
+    reads.new.all.long = rbind(reads.new.all.long,data.frame(GroupID, SampleID = paste(GroupID, "Rep", RepID),Reads=reads.new+begin-1))
   }
-  
   
   X = c(X,reads.new)
   G = c(G,rep(GroupID,length(reads.new)))
@@ -41,6 +37,30 @@ for (ID in reads.mat[,"SampleID"]) {
 }
 # dev.off()
 
+
+hist_K562 = ggplot(data = subset(reads.new.all.long,GroupID=="K562"), aes(x=Reads)) 
+hist_K562 + geom_histogram(bins=1024,size=3) + ylim(0,40) + 
+  scale_x_discrete(name ="Genomic location", breaks=c(begin,(begin+end)/2,end), limits=c(begin,end)) +
+  facet_wrap(~SampleID,ncol=1,nrow=3) + theme_bw() + 
+  geom_vline(xintercept = 100808844, color="red",linetype="dashed",size=0.5) + 
+  geom_vline(xintercept = 100808876, color="red",linetype="dashed") + theme(plot.margin=unit(c(0,1,0,0),"cm"))
+
+hist_Medullo_D721 = ggplot(data = subset(reads.new.all.long,GroupID=="Medullo_D721"), aes(x=Reads)) 
+hist_Medullo_D721 + geom_histogram(bins=1024,size=3) + ylim(0,10) + 
+  scale_x_discrete(name ="Genomic location", breaks=c(begin,(begin+end)/2,end), limits=c(begin,end)) +
+  facet_wrap(~SampleID,ncol=1,nrow=3) + theme_bw() + 
+  geom_vline(xintercept = 100808844, color="red",linetype="dashed",size=0.5) + 
+  geom_vline(xintercept = 100808876, color="red",linetype="dashed") + theme(plot.margin=unit(c(0,1,0,0),"cm"))
+
+hist_Medullo_D341 = ggplot(data = subset(reads.new.all.long,GroupID=="Medullo_D341"), aes(x=Reads)) 
+hist_Medullo_D341 + geom_histogram(bins=1024,size=3) + ylim(0,22) + 
+  scale_x_discrete(name ="Genomic location", breaks=c(begin,(begin+end)/2,end), limits=c(begin,end)) +
+  facet_wrap(~SampleID,ncol=1) + theme_bw() + 
+  geom_vline(xintercept = 100808844, color="red",linetype="dashed",size=0.5) + 
+  geom_vline(xintercept = 100808876, color="red",linetype="dashed") + theme(plot.margin=unit(c(0,1,0,0),"cm"))
+
+
+### Carry out the cross-group comparison
 
   
 subset = (G=="Medullo_D721" | G=="Medullo_D341" | G=="K562")
