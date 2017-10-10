@@ -88,7 +88,7 @@ plot1D(ans_andova,legend=TRUE,main="ANDOVA")
 # dev.off()
 
 # pdf(file="k562vsMedullo721vsMedullo341_VGF_ANDOVA_long_bfdr10.pdf",width=6)
-plot1D_sig_windows(ans_andova,legend=TRUE,main="ANDOVA",fdr=0.1)
+plot1DSigWindows(ans_andova,legend=TRUE,main="ANDOVA",fdr=0.1)
 # dev.off()
 
 

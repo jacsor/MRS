@@ -1,4 +1,4 @@
-plot1D_sig_windows = function(ans_mrs,fdr=0.1,precision = 0.001,...) { # Plot windows significant at given Bayesian FDR level
+plot1DSigWindows = function(ans_mrs,fdr=0.1,precision = 0.001,...) { # Plot windows significant at given Bayesian FDR level
   ans_mrs2 = ans_mrs
   c_vec = seq(0,1,by=precision)
   FDR = double(length(c_vec))
