@@ -53,7 +53,9 @@ plot1D <- function( ans,
                     regions = rep(1,length(ans$RepresentativeTree$Levels)),
                     legend = FALSE,
                     main = "default",
-                    abs = TRUE)
+                    abs = TRUE,
+                    eff_scale = "lor"
+                    )
 {
   if(class(ans)!="mrs")
   {
@@ -79,7 +81,7 @@ plot1D <- function( ans,
     if (main == "default")
       main = "PMAPs"
   }
-  else if(type == "eff")
+  else if(type == "eff" | type == "odds-ratio")
   {
   
    if (abs == TRUE) {
@@ -134,16 +136,26 @@ plot1D <- function( ans,
     if(type == "prob")
       mtext(formatC(seq(0,1,.1), format = "f", digits = 1),side=2,at=seq(1,2.,by=.1),las=2,cex=1, line=0)
     if(type == "eff") {
-      if (abs == FALSE) {
-        mtext(formatC(seq( -max(abs(names)), max(abs(names)), length.out=11), format = "f", digits = 1),
-              side=2,at=seq(1,2.,by=.1),las=2,cex=1, line=0)
-      } else {
-        mtext(formatC(seq( 0, max(names), length.out=11), format = "f", digits = 1),
-              side=2,at=seq(1,2.,by=.1),las=2,cex=1, line=0)
+      if (eff_scale == "lor") {
+        if (abs == FALSE) {
+          mtext(formatC(seq( -max(abs(names)), max(abs(names)), length.out=11), format = "f", digits = 1),
+                side=2,at=seq(1,2.,by=.1),las=2,cex=1, line=0)
+        } else {
+          mtext(formatC(seq( 0, max(names), length.out=11), format = "f", digits = 1),
+                side=2,at=seq(1,2.,by=.1),las=2,cex=1, line=0)
+        }
+      }
+      else {
+        if (abs == FALSE) {
+          mtext(formatC(exp(seq( -max(abs(names)), max(abs(names)), length.out=11)), format = "g", digits = 2),
+                side=2,at=seq(1,2.,by=.1),las=2,cex=1, line=0)
+        } else {
+          mtext(formatC(seq( 0, max(names), length.out=11), format = "g", digits = 2),
+                side=2,at=seq(1,2.,by=.1),las=2,cex=1, line=0)
+        }
       }
     }
 
-    
   }
   
   par(.pardefault)   

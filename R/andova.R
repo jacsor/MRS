@@ -60,7 +60,11 @@ andova <- function(  X,
                          alpha = 0.5,
                          nu_vec = 10^(seq(-1,4)),
                          return_global_null = TRUE,
-                         return_tree = TRUE )
+                         return_tree = TRUE,
+                         n_post_samples = 0,
+                         baseline = 0,
+                         method = "newton",
+                         n_grid_theta = 50)
 {
   X = as.matrix(X)
   if(Omega[1] == "default")
@@ -130,6 +134,25 @@ andova <- function(  X,
     return(0);
   }
   
+  if( baseline < 0 | baseline > n_groups )
+  {
+    print("ERROR: 0 <= baseline <= n_groups")
+    return(0);
+  }
+  
+
+  if (method == "newton") method = 0
+  else if (method == "riemann") method = 1
+  else {
+    print("ERROR: Integration method must be newton or riemann")
+    return(0);
+  }
+  
+  if (n_grid_theta < 1) {
+    print("ERROR: n_grid_theta < 1")
+    return(0);
+  }
+  
   ans = fitMRSNESTEDcpp( X, 
                          G, 
                          H,
@@ -145,7 +168,11 @@ andova <- function(  X,
                          delta,
                          eta, 
                          return_global_null, 
-                         return_tree )
+                         return_tree,
+                         n_post_samples,
+                         baseline,
+                         method,
+                         n_grid_theta )
   
   if (return_tree) {
     ans$RepresentativeTree$EffectSizes = matrix( unlist(ans$RepresentativeTree$EffectSizes), 
@@ -154,6 +181,15 @@ andova <- function(  X,
                                              nrow = length(ans$RepresentativeTree$Levels), byrow = TRUE)
   }
 
+  
+  if (n_post_samples > 0) {
+    for (i in 1:n_post_samples) {
+      ans$PostSamples[[i]]$EffectSizes = matrix( unlist(ans$PostSamples[[i]]$EffectSizes), 
+                                                 nrow = length(ans$PostSamples[[i]]$Levels), byrow = TRUE)
+      ans$PostSamples[[i]]$Regions = matrix( unlist(ans$PostSamples[[i]]$Regions), 
+                                             nrow = length(ans$PostSamples[[i]]$Levels), byrow = TRUE)
+    }
+  }
   
   colnames(ans$Data$X) = colnames(X)
   

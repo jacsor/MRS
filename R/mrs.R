@@ -47,6 +47,8 @@ mrs <- function( X,
                  alpha = 0.5,
                  return_global_null = TRUE,
                  return_tree = TRUE,
+                 n_post_samples = 0,
+                 baseline = 0,
                  min_n_node = 0
                 )
 {
@@ -113,7 +115,13 @@ mrs <- function( X,
     return(0);
   }
   
-  ans = fitMRScpp(X, G, n_groups, init_state, Omega, K, alpha, beta, gamma, delta, eta, return_global_null, return_tree, min_n_node)
+  if( baseline < 0 | baseline > n_groups )
+  {
+    print("ERROR: 0 <= baseline <= n_samples")
+    return(0);
+  }
+  
+  ans = fitMRScpp(X, G, n_groups, init_state, Omega, K, alpha, beta, gamma, delta, eta, return_global_null, return_tree, n_post_samples,baseline,min_n_node)
 
   if (return_tree) {
     ans$RepresentativeTree$EffectSizes = matrix( unlist(ans$RepresentativeTree$EffectSizes), 

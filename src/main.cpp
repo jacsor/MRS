@@ -21,8 +21,10 @@ Rcpp::List fitMRScpp( arma::mat X,
                       double eta = 0.3,
                       bool return_global_null = true,
                       bool return_tree = true,
+                      int n_post_samples = 0,
+                      int baseline = 0,
                       int min_n_node = 0
-                  )
+                 )
 {
 
   /* **************************************** */
@@ -69,7 +71,12 @@ Rcpp::List fitMRScpp( arma::mat X,
                       eta, 
                       return_global_null, 
                       return_tree,
-                      min_n_node);
+                      n_post_samples,
+                      baseline,
+                      min_n_node,
+                      0,  // Method is not used for MRS, use 0 as place holder
+                      1   // n_grid_theta is not used for MRS, use 1 as place holder
+                     );
   my_tree.update();
   
   double loglike = my_tree.get_marginal_loglikelihood();
@@ -94,6 +101,45 @@ Rcpp::List fitMRScpp( arma::mat X,
     Rcpp::Named("gamma") = gamma,
     Rcpp::Named("delta") = delta
   );
+  
+  Rcpp::List post_sample_trees(n_post_samples);
+    
+  if (n_post_samples > 0) {
+    
+    my_tree.sample_tree();
+    vector<unsigned short> levels_sample;
+    vector<double> alt_probs_sample;
+    vector<vec> effect_sizes_sample; 
+    vector<int> directions_sample;
+    vector< vector<double> > sides_sample;
+    vector< Col< unsigned > > data_points_sample;
+    vector<unsigned short> node_idx_sample;
+    
+    for (int sample_id = 0; sample_id < n_post_samples; sample_id++) {
+    
+      levels_sample = my_tree.get_level_sample_nodes(sample_id);
+      alt_probs_sample = my_tree.get_alt_prob_sample_nodes(sample_id);
+      effect_sizes_sample = my_tree.get_effect_size_sample_nodes(sample_id); 
+      directions_sample = my_tree.get_direction_sample_nodes(sample_id);
+      sides_sample = my_tree.get_sides_sample_nodes(a, b,sample_id);
+      data_points_sample =  my_tree.get_data_points_sample_nodes(sample_id);
+      node_idx_sample = my_tree.get_idx_sample_nodes(sample_id);
+      
+      post_sample_trees[sample_id] = Rcpp::List::create( 
+        Rcpp::Named( "Levels") = levels_sample,
+        Rcpp::Named( "AltProbs") = alt_probs_sample,
+        Rcpp::Named( "EffectSizes") = effect_sizes_sample,
+        Rcpp::Named( "Directions") = directions_sample,
+        Rcpp::Named( "Regions") = sides_sample,
+        Rcpp::Named( "DataPoints") = data_points_sample,
+        Rcpp::Named( "Ids") = node_idx_sample 
+      );
+    }
+  }
+  
+  else {
+    post_sample_trees = Rcpp::List::create();
+  }
   
   if(return_tree == true)
   {
@@ -124,6 +170,7 @@ Rcpp::List fitMRScpp( arma::mat X,
       Rcpp::Named( "PriorGlobNull") = prior_glob_null,
       Rcpp::Named( "LogLikelihood") = loglike,
       Rcpp::Named( "RepresentativeTree") = rep_tree,
+      Rcpp::Named( "PostSamples" ) = post_sample_trees,
       Rcpp::Named( "Data" ) = data,
       Rcpp::Named( "OtherInfo" ) = other_info
     ) ;   
@@ -138,11 +185,14 @@ Rcpp::List fitMRScpp( arma::mat X,
       Rcpp::Named( "PriorGlobNull") = prior_glob_null,
       Rcpp::Named( "LogLikelihood") = loglike,
       Rcpp::Named( "RepresentativeTree") = rep_tree,
+      Rcpp::Named( "PostSamples" ) = post_sample_trees,
       Rcpp::Named( "Data" ) = data,
       Rcpp::Named( "OtherInfo" ) = other_info
     ) ;   
 
   }
+  
+
 
     
 }
@@ -167,7 +217,11 @@ Rcpp::List fitMRSNESTEDcpp( arma::mat X,
                             double delta = 0.4,
                             double eta = 0,
                             bool return_global_null = true,
-                            bool return_tree = true
+                            bool return_tree = true,
+                            int n_post_samples = 0,
+                            int baseline = 0,
+                            int method = 0,  // method of integration over theta (0 is Newton-Raphson, 1 is Riemann quadrature)
+                            int n_grid_theta = 4 // the number of theta values used in the Riemann quadrature either when Riemann quadrature is chosen or when NR has failed.
                           )
 {
 
@@ -208,7 +262,12 @@ Rcpp::List fitMRSNESTEDcpp( arma::mat X,
                       delta,
                       eta, 
                       return_global_null, 
-                      return_tree);
+                      return_tree,
+                      n_post_samples,
+                      baseline,
+                      0, // n_min_node is not used for ANDOVA so use 0 as place holder in the constructor
+                      method, 
+                      n_grid_theta); 
   my_tree.update();
   
   double loglike = my_tree.get_marginal_loglikelihood();
@@ -236,6 +295,46 @@ Rcpp::List fitMRSNESTEDcpp( arma::mat X,
     Rcpp::Named("delta") = delta,
     Rcpp::Named("nu_vec") = nu_vec
   );
+  
+  Rcpp::List post_sample_trees(n_post_samples);
+  
+  if (n_post_samples > 0) {
+    
+    my_tree.sample_tree();
+    vector<unsigned short> levels_sample;
+    vector<double> alt_probs_sample;
+    vector<vec> effect_sizes_sample; 
+    vector<int> directions_sample;
+    vector< vector<double> > sides_sample;
+    vector< Col< unsigned > > data_points_sample;
+    vector<unsigned short> node_idx_sample;
+    
+    for (int sample_id = 0; sample_id < n_post_samples; sample_id++) {
+      
+      levels_sample = my_tree.get_level_sample_nodes(sample_id);
+      alt_probs_sample = my_tree.get_alt_prob_sample_nodes(sample_id);
+      effect_sizes_sample = my_tree.get_effect_size_sample_nodes(sample_id); 
+      directions_sample = my_tree.get_direction_sample_nodes(sample_id);
+      sides_sample = my_tree.get_sides_sample_nodes(a, b,sample_id);
+      data_points_sample =  my_tree.get_data_points_sample_nodes(sample_id);
+      node_idx_sample = my_tree.get_idx_sample_nodes(sample_id);
+      
+      post_sample_trees[sample_id] = Rcpp::List::create( 
+        Rcpp::Named( "Levels") = levels_sample,
+        Rcpp::Named( "AltProbs") = alt_probs_sample,
+        Rcpp::Named( "EffectSizes") = effect_sizes_sample,
+        Rcpp::Named( "Directions") = directions_sample,
+        Rcpp::Named( "Regions") = sides_sample,
+        Rcpp::Named( "DataPoints") = data_points_sample,
+        Rcpp::Named( "Ids") = node_idx_sample 
+      );
+    }
+  }
+  
+  else {
+    post_sample_trees = Rcpp::List::create();
+  }
+  
   
   if(return_tree == true)
   {
@@ -266,6 +365,7 @@ Rcpp::List fitMRSNESTEDcpp( arma::mat X,
       Rcpp::Named( "PriorGlobNull") = prior_glob_null,
       Rcpp::Named( "LogLikelihood") = loglike,
       Rcpp::Named( "RepresentativeTree") = rep_tree,
+      Rcpp::Named( "PostSamples" ) = post_sample_trees,
       Rcpp::Named( "Data" ) = data,
       Rcpp::Named( "OtherInfo" ) = other_info
     ) ;   
@@ -280,6 +380,7 @@ Rcpp::List fitMRSNESTEDcpp( arma::mat X,
       Rcpp::Named( "PriorGlobNull") = prior_glob_null,
       Rcpp::Named( "LogLikelihood") = loglike,
       Rcpp::Named( "RepresentativeTree") = rep_tree,
+      Rcpp::Named( "PostSamples" ) = post_sample_trees,
       Rcpp::Named( "Data" ) = data,
       Rcpp::Named( "OtherInfo" ) = other_info
     ) ;   

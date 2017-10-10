@@ -10,21 +10,25 @@ class class_tree
   public:
   Mat<unsigned int> X; // the data
   arma::vec G; // the group labels of each observation
-  arma::vec H; // the sub-group labels of each observation (used for dANOVA)
+  arma::vec H; // the sub-group labels of each observation (used for ANDOVA)
   int n_tot; // total number of observations
   int p;    // dimension of the sample space
   int n_states; // number of hidden states
   vec init_state; // initial state of the hidden process
   int n_groups;  // number of groups
-  Col<int> n_subgroups; // number of subgrous within each group (used for dANOVA)
-  Col<int> cum_subgroups; // cumulative sum of n_subgroups; (used for dANOVA)
-  arma::vec nu_vec;  // discrete prior on the parameter nu
+  Col<int> n_subgroups; // number of subgrous within each group (used for ANDOVA)
+  Col<int> cum_subgroups; // cumulative sum of n_subgroups; (used for ANDOVA)
+  arma::vec nu_vec;  // discrete prior on the parameter nu (used for ANDOVA)
   int K;    // maximum depth of the tree
   double alpha;   // pseudo-counts
   double beta, gamma, delta, eta;  // parameters of the transition probability matrix
   bool return_global_null, return_tree;
   int min_n_node;   // Node in the tree is returned if there are more than min_n_node data-points in it.
+  int baseline; // Baseline group for computing effect sizes. If 0 then no baseline and use leave-one-out odds ratio
+  int method; // Method of integration for theta. 0 --> Newton-Raphson; 1 --> Riemann quadrature
+  arma::vec theta_vec; // the grid of theta values used in Riemann quadrature (used for ANDOVA)
   //constructor
+  int n_post_samples; // number of posterior samples of the effect size to draw
   class_tree( Mat<unsigned int> X, 
               arma::vec G,
               arma::vec H,
@@ -40,8 +44,12 @@ class class_tree
               double eta = 0.3,
               bool return_global_null = true,
               bool return_tree = true,
-              int min_n_node = 0
-            );
+              int n_post_samples = 0, 
+              int baseline = 0,
+              int min_n_node = 0,
+              int method = 0,
+              int n_grid_theta = 50
+           );
             
   // compute posterior recursively          
   void update();      
@@ -50,6 +58,8 @@ class class_tree
   // extract the MAP tree
   void representative_tree(); 
 
+  //posterior samples of effect sizes
+  void sample_tree();
 
   
   // getters
@@ -64,7 +74,15 @@ class class_tree
   double get_prior_global_null(); 
   double get_marginal_loglikelihood(); 
 
-
+  vector< Col< unsigned > > get_data_points_sample_nodes(int sample_id);
+  vector<unsigned short> get_level_sample_nodes(int sample_id);
+  vector<double> get_alt_prob_sample_nodes(int sample_id);
+  vector<vec> get_effect_size_sample_nodes(int sample_id);
+  vector<int> get_direction_sample_nodes(int sample_id);
+  vector< vector<double> > get_sides_sample_nodes(vec a, vec b,int sample_id);
+  vector<unsigned short> get_idx_sample_nodes(int sample_id);
+  
+  
 
   
   // clear memory 
@@ -87,6 +105,7 @@ class class_tree
   
   // save the representative tree and nodes information
   result_cubes_type result_cubes;
+  vector< result_cubes_type > result_cubes_post_samples;
   
   // for each state compute the most likely children's states and cutting direction
   void compute_map(INDEX_TYPE& I, int level, arma::mat lambda_post);
@@ -135,11 +154,26 @@ class class_tree
                                 Col<unsigned int> cut_counts,
                                 uword state_star ); 
                                 
+                                
+void sample_subtree(  INDEX_TYPE& I, 
+                      int level, 
+                      unsigned short node_index, 
+                      Mat<unsigned int> X_binary,
+                      Col<unsigned int> data_indices,
+                      Col<unsigned int> cut_counts,
+                      uword state_par,
+                      int sample_id );                                 
+                                
   //compute effect size for mrs model
   Rcpp::List mrs_effect_size(INDEX_TYPE& I, int level, int top_direction);
   // compute effect size for anova model
   Rcpp::List anova_effect_size(INDEX_TYPE& I, int level, int top_direction);  
 
+  //sample effect size for mrs model
+  Rcpp::List mrs_sample_effect_size(INDEX_TYPE& I, int level, int direction, int state);
+  //sample effect size for anova model
+  Rcpp::List anova_sample_effect_size(INDEX_TYPE& I, int level, int direction, int state);  
+  
                                 
   void save_index(  INDEX_TYPE& I, 
                     int level,                
@@ -149,6 +183,15 @@ class class_tree
                     Col<unsigned int> data_indices,
                     unsigned short node_index );                               
 
+  void save_index_sample(  INDEX_TYPE& I, 
+                    int level,                
+                    double alt_prob, 
+                    vec effect_size, 
+                    int direction,
+                    Col<unsigned int> data_indices,
+                    unsigned short node_index,
+                    int sample_id );                               
+  
   
   // organize observations in the tree
   void init();

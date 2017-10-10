@@ -13,7 +13,7 @@ The package can be installed on Linux and Mac using `devtools`:
 ```S
 install.packages('devtools')
 library('devtools')
-devtools::install_github('MRS', 'jacsor')
+devtools::install_github('MaStatLab/MRS')
 ```
 
 ### Use
@@ -29,6 +29,6 @@ plotTree(ans)
 ```
 
 ### Reference
-Soriano J. and Ma L. (2015). Probabilistic multi-resolution scanning for two-sample differences. JRSS-B (To appear).
+Soriano J. and Ma L. (2017). Probabilistic multi-resolution scanning for two-sample differences. Journal of the Royal Statistical Society. Series B. Vol. 79, No. 2, 547-572.
 
-Ma L. and Soriano J. (2016). Analysis of distributional variation through multi-scale Beta-Binomial modeling. http://arxiv.org/abs/1604.01443
+Ma L. and Soriano J. (2017). Analysis of distributional variation through multi-scale Beta-Binomial modeling.
