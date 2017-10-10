@@ -1,10 +1,14 @@
-setwd("~/Dropbox/work/dANOVA/Code")
+install.packages('devtools')
+library('devtools')
+devtools::install_github('MaStatLab/MRS')
 
 library(gtools)
 library(MASS)
 library(MRS)
 library(cramer)
 library(MTSKNN)
+library(ggplot2)
+library(plotROC)
 source("BF.PT.uni.R")
 
 nu.vec = 10^seq(-1,4,length=10)
@@ -210,64 +214,73 @@ for (scenario in scenario.vec) {
 
 ## Figure 3 in Ma and Soriano (2017)
 ## Plot the true density along with ROC curves for each scenario
-# pdf(file="Figures/ROC_curves.pdf",width=8,height = 11)
-par(mfrow=c(length(scenario.vec)-1,2))
-for (scenario in scenario.vec[-1]) {
-  xlim=c(0.5,3)
-  ylim=c(0,max(true.den[,scenario,,]))
-  for (j in 1:n_groups) {
+# Reshape true.den
+true.den.long = NULL
+true.den.long = data.frame(true.den.long)
+
+for (scenario in scenario.vec) {
+  for (j in n_groups:1) {
     for (k in 1:n_replicates) {
-      if (k>1 | (j==2 & k==1)) { par(new=TRUE)}
-      plot(x=xgrid,y=true.den[,scenario,j,k],xlab="x",ylab="Density",type="l",col=3-j,lty=j,xlim=xlim,ylim=ylim,main=scenario)
-    }  
+      true.den.long = rbind(true.den.long,cbind(xgrid,true.den[,scenario,j,k],scenario, 3-j,k))
+    }
   }
-  legend("topright",legend=c("Group 1","Group 2"),col=c("black","red"), lty=c(2,1),lwd=2,cex=0.8) 
-  
-  plot.roc(PostGlobNull.andova.mat[,scenario],PostGlobNull.andova.mat[,"Null"],main=scenario)
-  par(new=TRUE)
-  plot.roc(PostGlobNull.2s.mat[,scenario],PostGlobNull.2s.mat[,"Null"],col="red",lty=2)
-  par(new=TRUE)
-  plot.roc(stat.cramer.mat[,scenario],stat.cramer.mat[,"Null"],col="purple",lty=3)
-  par(new=TRUE)
-  plot.roc(pval.knn.mat[,scenario],pval.knn.mat[,"Null"],col="blue",lty=4)
-  par(new=TRUE)
-  plot.roc(BF.PT.mat[,scenario],BF.PT.mat[,"Null"],col="green",lty=5)
-  par(new=TRUE)
-  plot.roc(BF.CH.mat[,scenario],BF.CH.mat[,"Null"],col="orange",lty=6)
-  abline(a=0,b=1,lty="dashed",col="gray")
-  legend("bottomright",legend=c("ANDOVA","ms-BB w/ inf nu","Cramer","KNN","PT","CH"),col=c("black","red","purple","blue","green","orange"), lty=c(1,2,3,4,5,6),lwd=2,cex=0.7)
 }
-# dev.off()
+colnames(true.den.long) = c("x","density","scenario","Group","sample")
+true.den.long$x = as.numeric(as.character(true.den.long$x))
+true.den.long$density = as.numeric(as.character(true.den.long$density))
+true.den.long$groupbysample_f = factor(paste(true.den.long$Group,true.den.long$sample))
+true.den.plot = ggplot(data = true.den.long, aes(x=x,y=density,group=groupbysample_f)) + geom_line(aes(linetype=Group,color=Group)) + facet_wrap(~scenario,ncol=1)
+true.den.plot   + theme_bw() +  
+  theme(legend.key.width=unit(1.25,"cm"),legend.position="bottom")
+
+# Plot ROCs using ggplot
+test.stats.all.wide = data.frame(NULL)
+method=c("ANDOVA","ANOVA-DDP","ms-BB w/ inf nu","PT","CH","Cramer","KNN")
+
+for (scenario in scenario.vec){
+  test.stats.all.wide = rbind(test.stats.all.wide,
+                              cbind(PostGlobNull.andova.mat[,scenario],1-anovaddp.mat[,scenario],PostGlobNull.2s.mat[,scenario],BF.PT.mat[,scenario],BF.CH.mat[,scenario],
+                                    stat.cramer.mat[,scenario],pval.knn.mat[,scenario]))
+}
+colnames(test.stats.all.wide) = method
+head(test.stats.all.wide)
+test.stats.all.wide = data.frame(scenario = rep(scenario.vec,each=nsim), test.stats.all.wide)
+## Reshape the data into long form
+test.stats.all.long = melt(test.stats.all.wide,id.vars=c("scenario"))
+D = as.numeric(test.stats.all.long$scenario != "Null")
+test.stats.all.long = data.frame(D=D,test.stats.all.long)
+colnames(test.stats.all.long)[3] = "Method"
+
+for (scenario in scenario.vec[-1]) {
+  test.stats.scenario.null = data.frame(D=0,scenario=scenario,test.stats.all.long[test.stats.all.long$scenario == "Null",c("Method","value")])
+  test.stats.all.long = rbind(test.stats.all.long,test.stats.scenario.null)
+}
+levels(test.stats.all.long$Method) = method
+test.stats.all.long$scenario = factor(test.stats.all.long$scenario,levels=scenario.vec)
+
+
+ggplot(subset(test.stats.all.long,scenario != "Null"), aes(d = D, m = -value,color=Method,linetype=Method)) + 
+  geom_roc(n.cuts=0,labels=FALSE) + style_roc() +
+  theme(legend.key.width=unit(1.25,"cm"),legend.position="bottom") + 
+  facet_wrap(~scenario,ncol=1) +
+  guides(color = guide_legend(override.aes = list(shape = NA)))
 
 
 
 ## Figure 2 in Ma and Soriano (2017)
 ## Plot the true density under the null scenario as well as the histograms of the different statistic under the null
 
-# pdf(file="Figures/null_stat_hist.pdf",width=8,height = 7)
-par(mfrow=c(4,2))
+p=c(exp(PostGlobNull.andova.mat[,"Null"]),1-anovaddp.mat[,"Null"],exp(PostGlobNull.2s.mat[,"Null"]),1/(1+exp(-BF.PT.mat[,"Null"])),1/(1+exp(-BF.CH.mat[,"Null"])),
+    pval.cramer.mat[,"Null"],pval.knn.mat[,"Null"])
+method=c("ANDOVA (Posterior null probibility)","ANOVA-DDP (Posterior null probibility)","ms-BB w/ inf nu (Posterior null probibility)","PT (Posterior null probibility)","CH (Posterior null probibility)","Cramer (p-value)","KNN (p-value)")
+stat.type = c("Posterior null probability","Posterior null probability","Posterior null probability","Posterior null probability","Posterior null probability","p-value","p-value")
+nsim = nrow(PostGlobNull.andova.mat)    
 
-scenario="Null"
-xlim=c(0.5,3)
-ylim=c(0,max(true.den[,scenario,,]))
-for (j in 1:n_groups) {
-  for (k in 1:n_replicates) {
-    if (k>1 | (j==2 & k==1)) { par(new=TRUE) }
-    if (k==1 & j==1) {xlab = "x";ylab="Density";main=scenario}
-    else {xlab="";ylab="";main=""}
-    plot(x=xgrid,y=true.den[,scenario,j,k],xlab=xlab,ylab=ylab,type="l",col=3-j,lty=j,xlim=xlim,ylim=ylim,main=main)
-  }  
-}
-legend("topright",legend=c("Group 1","Group 2"),col=c("black","red"), lty=c(2,1),lwd=2) 
+teststats = data.frame(test.statistic=p,method_f = factor(rep(method,rep(500,length(method))),levels=method),stat.type = rep(stat.type,rep(500,length(stat.type))))
+histgram = ggplot(data = teststats, aes(x=test.statistic)) + geom_histogram(binwidth=0.05,color="white") + labs(x="") + theme_bw()
+histgram + facet_wrap(~method_f,ncol=2)
 
-xlim=c(0,1)
-hist(exp(PostGlobNull.andova.mat[,"Null"]),breaks=20,xlim=xlim,freq=TRUE,xlab="Posterior null probability",main="ANDOVA")
-hist(exp(PostGlobNull.2s.mat[,"Null"]),breaks=20,xlim=c(0,1),xlab="Posterior null probability",main="ms-BB w/ inf nu")
-hist(pval.cramer.mat[,"Null"],breaks=20,xlim=c(0,1),xlab="p-value",main="Cramer")
-hist(pval.knn.mat[,"Null"],breaks=20,xlim=c(0,1),xlab="p-value",main="KNN")
-hist(1/(1+exp(-BF.PT.mat[,"Null"])),breaks=20,xlim=xlim,xlab="Posterior null probability",main="PT",freq=TRUE)
-hist(1/(1+exp(-BF.CH.mat[,"Null"])),breaks=20,xlim=xlim,xlab="Posterior null probability",main="CH",freq=TRUE)
-# dev.off()
+
 
 
 ## A sensitivity analysis on the maximum depth of scanning 
@@ -365,7 +378,7 @@ for (scenario in scenario.vec) {
 # pdf(file="Figures/ROC_curves_sensitivity_on_K.pdf",width=8,height = 6)
 par(mfrow=c(length(scenario.vec)/2,2))
 for (scenario in scenario.vec[-1]) {
-
+  
   for (i in c(1,3,5,7)) { ## The ROC curves are all essentially overlapping. We plot four of them to increase readability.
     if (i > 1) par(new=TRUE)
     plot.roc(PostGlobNull.andova.array[,scenario,as.character(K.vec[i])],PostGlobNull.andova.array[,"Null",as.character(K.vec[i])],main=scenario,col=(i+1)/2,lty=(i+1)/2)
@@ -578,77 +591,75 @@ for (scenario in scenario.vec) {
   comp.mean.null = c(1,1.5,2.5)
   sd.vec = c(0.05,0.2,rep(0.1,n_comp-2))
   
-    n_obs = matrix(NA,nrow=n_groups,ncol=n_replicates)
-    for (j in 1:n_groups) {  
-      n_obs[j,] = rmultinom(1,size=n_obs_tot,prob=rdirichlet(1,alpha=rep(1/n_replicates,n_replicates)*n_replicates))
-    }
-    
-    mu0=rep(0,n_comp)
-    W = array(NA, dim=c(n_comp, n_groups, n_replicates ))
-    
-    
-    for(k in 1:n_replicates)
+  n_obs = matrix(NA,nrow=n_groups,ncol=n_replicates)
+  for (j in 1:n_groups) {  
+    n_obs[j,] = rmultinom(1,size=n_obs_tot,prob=rdirichlet(1,alpha=rep(1/n_replicates,n_replicates)*n_replicates))
+  }
+  
+  mu0=rep(0,n_comp)
+  W = array(NA, dim=c(n_comp, n_groups, n_replicates ))
+  
+  
+  for(k in 1:n_replicates)
+  {
+    for(j in 1:n_groups)
     {
-      for(j in 1:n_groups)
-      {
-        temp = mvrnorm(n = 1, mu = mu0, Sigma = 1*diag(1,n_comp) )
-        W[,j,k] = exp(temp) / sum(exp(temp))       
-      }
+      temp = mvrnorm(n = 1, mu = mu0, Sigma = 1*diag(1,n_comp) )
+      W[,j,k] = exp(temp) / sum(exp(temp))       
     }
-    
-    X = rep(NA, sum(n_obs))
-    G = rep(NA, sum(n_obs))
-    H = rep(NA, sum(n_obs))
-    
-    it = 1
-    
-    for(k in 1:n_replicates) {
-      for(j in 1:n_groups) {
-        for (i in 1:n_obs[j,k]) {
-          Z = sample(1:n_comp,1, prob=W[,j,k])
-          X[it] = rnorm(1, comp.mean.null[Z], sd.vec[Z])
-          
-          ## Local shifts
-          if (scenario == "Local shift") {
-            if(j == 1 && Z==1  )
-              X[it] = X[it] + 0.1 
-          }
-          
-          if (scenario == "Global shift") {
-            if (j==1) {
-              X[it] = X[it] + 0.05
-            }
-          }
-          
-          if (scenario == "Local dispersion") {
-            if (j == 1 && Z==1) {
-              X[it] = rnorm(1,comp.mean.null[Z],sd.vec[Z]*3)
-            }
-          }
-          
-          if (scenario == "Global dispersion") {
-            if (j == 1) {
-              X[it] = rnorm(1,comp.mean.null[Z],sd.vec[Z]*2)
-            }
-          }
-          G[it] = j
-          H[it] = k
-          it = it + 1
+  }
+  
+  X = rep(NA, sum(n_obs))
+  G = rep(NA, sum(n_obs))
+  H = rep(NA, sum(n_obs))
+  
+  it = 1
+  
+  for(k in 1:n_replicates) {
+    for(j in 1:n_groups) {
+      for (i in 1:n_obs[j,k]) {
+        Z = sample(1:n_comp,1, prob=W[,j,k])
+        X[it] = rnorm(1, comp.mean.null[Z], sd.vec[Z])
+        
+        ## Local shifts
+        if (scenario == "Local shift") {
+          if(j == 1 && Z==1  )
+            X[it] = X[it] + 0.1 
         }
+        
+        if (scenario == "Global shift") {
+          if (j==1) {
+            X[it] = X[it] + 0.05
+          }
+        }
+        
+        if (scenario == "Local dispersion") {
+          if (j == 1 && Z==1) {
+            X[it] = rnorm(1,comp.mean.null[Z],sd.vec[Z]*3)
+          }
+        }
+        
+        if (scenario == "Global dispersion") {
+          if (j == 1) {
+            X[it] = rnorm(1,comp.mean.null[Z],sd.vec[Z]*2)
+          }
+        }
+        G[it] = j
+        H[it] = k
+        it = it + 1
       }
     }
-    
-    ans_andova_precise = andova(X,G,H,K=K,nu=nu_vec_prec,n_grid_theta = n_grid_theta_prec,method="riemann")
-    ans_andova_laplace = andova(X,G,H,K=K,nu=nu_vec_prec,n_grid_theta = n_grid_nu_prec)
-    ans_andova_riemann = andova(X,G,H,K=K,nu=10^seq(-1,4,length=10),n_grid_theta = n_grid_theta_prec,method="riemann")
-    
-    plot(ans_andova_precise$RepresentativeTree$AltProbs,ans_andova_laplace$RepresentativeTree$AltProbs,main=scenario,xlab="Precise PMAPs",ylab="INLA PMAPs")
-    abline(a=0,b=1,col="gray")
-    
-    plot(ans_andova_precise$RepresentativeTree$AltProbs,ans_andova_riemann$RepresentativeTree$AltProbs,main=scenario,xlab="Precise PMAPs",ylab="Riemann PMAPs with 10 grid points")
-    abline(a=0,b=1,col="gray")
-    
+  }
+  
+  ans_andova_precise = andova(X,G,H,K=K,nu=nu_vec_prec,n_grid_theta = n_grid_theta_prec,method="riemann")
+  ans_andova_laplace = andova(X,G,H,K=K,nu=nu_vec_prec,n_grid_theta = n_grid_nu_prec)
+  ans_andova_riemann = andova(X,G,H,K=K,nu=10^seq(-1,4,length=10),n_grid_theta = n_grid_theta_prec,method="riemann")
+  
+  plot(ans_andova_precise$RepresentativeTree$AltProbs,ans_andova_laplace$RepresentativeTree$AltProbs,main=scenario,xlab="Precise PMAPs",ylab="INLA PMAPs")
+  abline(a=0,b=1,col="gray")
+  
+  plot(ans_andova_precise$RepresentativeTree$AltProbs,ans_andova_riemann$RepresentativeTree$AltProbs,main=scenario,xlab="Precise PMAPs",ylab="Riemann PMAPs with 10 grid points")
+  abline(a=0,b=1,col="gray")
+  
 }
-
-
 
