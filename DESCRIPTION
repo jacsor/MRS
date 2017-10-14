@@ -12,7 +12,7 @@ Description: An implementation of the MRS algorithm for comparison across distri
   MRS effectively detects and characterizes a variety of underlying differences. 
   These differences can be visualized using several plotting functions.
 License: GPL (>= 3)
-Imports: Rcpp (>= 0.11.0), igraph, optimx
+Imports: Rcpp (>= 0.11.0), igraph
 Suggests: KernSmooth
 LinkingTo: Rcpp, RcppArmadillo
 NeedsCompilation: yes
