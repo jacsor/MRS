@@ -18,8 +18,8 @@ class class_tree
   int n_groups;  // number of groups
   Col<int> n_subgroups; // number of subgrous within each group (used for dANOVA)
   Col<int> cum_subgroups; // cumulative sum of n_subgroups; (used for dANOVA)
-  arma::vec nu_vec;  // discrete prior on the parameter nu
   int K;    // maximum depth of the tree
+  arma::vec nu_vec;  // discrete prior on the parameter nu
   double alpha;   // pseudo-counts
   double beta, gamma, delta, eta;  // parameters of the transition probability matrix
   bool return_global_null, return_tree;

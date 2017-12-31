@@ -982,8 +982,6 @@ void class_tree::save_index(  INDEX_TYPE& I,
   {
     if ( I.var[i] - index_prev_var - 1 > 0 ) 
     { // next variable
-      cout << "level = " << i << ", x_curr_count = " << x_curr_count << ", shift = " << K-x_curr_count - 1 << endl;
-      cout << "lower = " << lower << ", upper = " <<  lower + ((unsigned int) 1 << (K-x_curr_count - 1)) - 1 << endl;
       side_type new_side;
       new_side.var = x_curr; 
       new_side.extremes[0] = lower; 
