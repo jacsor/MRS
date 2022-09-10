@@ -641,8 +641,7 @@ Rcpp::List class_tree::compute_m_anova(INDEX_TYPE& I, int level, int d)
   vec m_nus(n_grid + 1); m_nus.fill(log(0.0));
   mat thetas(n_groups, n_grid); thetas.fill(0.5);
   int n_grid_theta = 4;
-  vec theta0(n_grid_theta);
-  theta0 << 0.125 << 0.375 << 0.625 << 0.875 ;
+  vec theta0({ 0.125, 0.375, 0.625, 0.875});
 
   vec data_0( sum(n_subgroups) ); 
   vec data_1( sum(n_subgroups) );
