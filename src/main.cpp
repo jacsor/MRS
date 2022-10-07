@@ -40,7 +40,7 @@ Rcpp::List fitMRScpp( arma::mat X,
   // sub-gorups label for each observation (used in dANOVA)
   vec H(n_tot); H.fill(1);
   // prior on parameter nu (used in dANOVA)
-  arma::vec nu_vec(1); nu_vec << 1 ;   
+  arma::vec nu_vec({1}); 
   vec a = 1.0 / (Omega.col(1) - Omega.col(0));
   vec b = - Omega.col(0) % a;
   // Initialize matrix of observations normalized to the p-dimensional hypercube
