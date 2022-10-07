@@ -31,4 +31,4 @@ plotTree(ans)
 ### Reference
 Soriano J. and Ma L. (2017). Probabilistic multi-resolution scanning for two-sample differences. Journal of the Royal Statistical Society. Series B. Vol. 79, No. 2, 547-572.
 
-Ma L. and Soriano J. (2017). Analysis of distributional variation through multi-scale Beta-Binomial modeling.
+Ma L. and Soriano J. (2018). Analysis of distributional variation through multi-scale Beta-Binomial modeling. Journal of Computational and Graphical Statistics. Vol. 27, No. 3, 529-541.
